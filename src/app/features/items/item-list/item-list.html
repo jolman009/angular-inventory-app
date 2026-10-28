@@ -1,0 +1,5 @@
+<main style="max-width: 720px; margin: 2rem auto; font-family: system-ui, sans-serif;">
+  <h1>My Collection</h1>
+  <p>Signed in as {{ supabase.session()?.user?.email }}</p>
+  <button (click)="signOut()">Sign out</button>
+</main>
