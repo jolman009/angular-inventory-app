@@ -1,5 +1,5 @@
 <form [formGroup]="form" (ngSubmit)="submit()" class="item-form">
-  <h2>Add an item</h2>
+  <h2>{{ isEdit() ? 'Edit item' : 'Add an item' }}</h2>
 
   <div class="row">
     <label>
@@ -45,5 +45,10 @@
     <textarea formControlName="notes" rows="2"></textarea>
   </label>
 
-  <button type="submit">Add item</button>
+  <div class="buttons">
+    <button type="submit">{{ isEdit() ? 'Save changes' : 'Add item' }}</button>
+    @if (isEdit()) {
+      <button type="button" (click)="cancel()">Cancel</button>
+    }
+  </div>
 </form>

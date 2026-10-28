@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ItemStore } from '../item-store';
-import { ITEM_STATUSES, ItemStatus, MEDIA_TYPES, MediaType } from '../item.model';
+import { ITEM_STATUSES, Item, ItemStatus, MEDIA_TYPES, MediaType } from '../item.model';
 
 @Component({
   selector: 'app-item-form',
@@ -13,6 +13,12 @@ export class ItemForm {
   private fb = inject(FormBuilder);
   protected store = inject(ItemStore);
 
+  // Data in from the parent: the item to edit, or null for "add" mode
+  readonly item = input<Item | null>(null);
+  // Event out to the parent: "I'm finished editing"
+  readonly done = output<void>();
+
+  protected readonly isEdit = computed(() => this.item() !== null);
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
 
@@ -25,6 +31,25 @@ export class ItemForm {
     notes: [''],
   });
 
+  constructor() {
+    // Whenever the item input changes, fill the form (edit) or clear it (add)
+    effect(() => {
+      const item = this.item();
+      if (item) {
+        this.form.reset({
+          type: item.type,
+          title: item.title,
+          status: item.status,
+          condition: item.condition ?? '',
+          purchase_price: item.purchase_price,
+          notes: item.notes ?? '',
+        });
+      } else {
+        this.form.reset();
+      }
+    });
+  }
+
   async submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -32,16 +57,29 @@ export class ItemForm {
     }
 
     const v = this.form.getRawValue();
-    await this.store.add({
+    const fields = {
       type: v.type,
       title: v.title.trim(),
       status: v.status,
       condition: v.condition.trim() || null,
       purchase_price: v.purchase_price,
       notes: v.notes.trim() || null,
-      details: {},
-    });
+    };
 
-    if (!this.store.error()) this.form.reset();
+    const current = this.item();
+    if (current) {
+      await this.store.update(current.id, fields);
+    } else {
+      await this.store.add({ ...fields, details: {} });
+    }
+
+    if (this.store.error()) return;
+
+    if (current) this.done.emit();
+    else this.form.reset();
+  }
+
+  cancel() {
+    this.done.emit();
   }
 }

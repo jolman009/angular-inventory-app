@@ -17,21 +17,25 @@
     }
   </section>
 
-  <app-item-form />
+  <app-item-form [item]="editingItem()" (done)="editingId.set(null)" />
 
   @if (store.error()) { <p class="error">{{ store.error() }}</p> }
 
   <section class="filters">
     <input type="search" placeholder="Search titles…" [value]="store.search()" (input)="onSearch($event)" />
 
-    <select [value]="store.typeFilter()" (change)="onTypeFilter($event)">
-      <option value="all">All types</option>
-      @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+    <select (change)="onTypeFilter($event)">
+      <option value="all" [selected]="store.typeFilter() === 'all'">All types</option>
+      @for (t of types; track t) {
+        <option [value]="t" [selected]="store.typeFilter() === t">{{ t }}</option>
+      }
     </select>
 
-    <select [value]="store.statusFilter()" (change)="onStatusFilter($event)">
-      <option value="all">All statuses</option>
-      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    <select (change)="onStatusFilter($event)">
+      <option value="all" [selected]="store.statusFilter() === 'all'">All statuses</option>
+      @for (s of statuses; track s) {
+        <option [value]="s" [selected]="store.statusFilter() === s">{{ s }}</option>
+      }
     </select>
   </section>
 
@@ -48,9 +52,12 @@
           </div>
 
           <div class="actions">
-            <select [value]="item.status" (change)="onStatusChange(item.id, $event)" (click)="$event.stopPropagation()">
-              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-            </select>
+            <select (change)="onStatusChange(item.id, $event)" (click)="$event.stopPropagation()">
+            @for (s of statuses; track s) {
+            <option [value]="s" [selected]="s === item.status">{{ s }}</option>
+            }
+           </select>
+            <button (click)="startEdit(item.id); $event.stopPropagation()">Edit</button>
             <button (click)="store.remove(item.id); $event.stopPropagation()">Delete</button>
           </div>
         </li>

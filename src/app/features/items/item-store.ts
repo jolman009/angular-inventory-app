@@ -72,6 +72,22 @@ export class ItemStore {
     this.items.update(list => [data as Item, ...list]);
   }
 
+    async update(id: string, changes: Partial<NewItem>) {
+    this.error.set(null);
+    const { data, error } = await this.db
+      .from('items')
+      .update(changes)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.error.set(error.message);
+      return;
+    }
+    this.items.update(list => list.map(i => (i.id === id ? (data as Item) : i)));
+  }
+
   async setStatus(id: string, status: ItemStatus) {
     const previous = this.items();
     // update the screen immediately...

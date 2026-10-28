@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Supabase } from '../../../core/supabase';
 import { ItemForm } from '../item-form/item-form';
@@ -20,8 +20,19 @@ export class ItemList implements OnInit {
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
 
+  // Which item (if any) is being edited
+  protected readonly editingId = signal<string | null>(null);
+  protected readonly editingItem = computed(
+    () => this.store.items().find(i => i.id === this.editingId()) ?? null,
+  );
+
   ngOnInit() {
     this.store.load();
+  }
+
+  startEdit(id: string) {
+    this.editingId.set(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   onSearch(e: Event) {
