@@ -1,5 +1,62 @@
-<main style="max-width: 720px; margin: 2rem auto; font-family: system-ui, sans-serif;">
-  <h1>My Collection</h1>
-  <p>Signed in as {{ supabase.session()?.user?.email }}</p>
-  <button (click)="signOut()">Sign out</button>
+<main class="page">
+  <header class="top">
+    <div>
+      <h1>My Collection</h1>
+      <p class="muted">{{ supabase.session()?.user?.email }}</p>
+    </div>
+    <button (click)="signOut()">Sign out</button>
+  </header>
+
+  <section class="stats">
+    <span>{{ store.items().length }} items</span>
+    <span>{{ store.totalSpent() | currency }} spent</span>
+    @for (s of statuses; track s) {
+      @if (store.countsByStatus()[s]) {
+        <span>{{ s }}: {{ store.countsByStatus()[s] }}</span>
+      }
+    }
+  </section>
+
+  <app-item-form />
+
+  @if (store.error()) { <p class="error">{{ store.error() }}</p> }
+
+  <section class="filters">
+    <input type="search" placeholder="Search titles…" [value]="store.search()" (input)="onSearch($event)" />
+
+    <select [value]="store.typeFilter()" (change)="onTypeFilter($event)">
+      <option value="all">All types</option>
+      @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+
+    <select [value]="store.statusFilter()" (change)="onStatusFilter($event)">
+      <option value="all">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+  </section>
+
+  @if (store.loading()) {
+    <p>Loading…</p>
+  } @else {
+    <ul class="items">
+      @for (item of store.filtered(); track item.id) {
+        <li [class.selected]="store.selectedId() === item.id" (click)="store.selectedId.set(item.id)">
+          <div>
+            <strong>{{ item.title }}</strong>
+            <span class="muted"> · {{ item.type }}</span>
+            @if (item.condition) { <span class="muted"> · {{ item.condition }}</span> }
+          </div>
+
+          <div class="actions">
+            <select [value]="item.status" (change)="onStatusChange(item.id, $event)" (click)="$event.stopPropagation()">
+              @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+            </select>
+            <button (click)="store.remove(item.id); $event.stopPropagation()">Delete</button>
+          </div>
+        </li>
+      } @empty {
+        <li class="empty">Nothing matches yet. Add your first item above.</li>
+      }
+    </ul>
+  }
 </main>

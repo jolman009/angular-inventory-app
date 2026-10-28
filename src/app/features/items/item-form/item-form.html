@@ -1,0 +1,49 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="item-form">
+  <h2>Add an item</h2>
+
+  <div class="row">
+    <label>
+      Type
+      <select formControlName="type">
+        @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+      </select>
+    </label>
+
+    <label>
+      Status
+      <select formControlName="status">
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </label>
+  </div>
+
+  <label>
+    Title
+    <input formControlName="title" placeholder="e.g. Abbey Road" />
+  </label>
+  @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+    <small class="field-error">Title is required.</small>
+  }
+
+  <div class="row">
+    <label>
+      Condition
+      <input formControlName="condition" placeholder="e.g. Near mint" />
+    </label>
+
+    <label>
+      Price paid
+      <input type="number" step="0.01" formControlName="purchase_price" />
+    </label>
+  </div>
+  @if (form.controls.purchase_price.hasError('min')) {
+    <small class="field-error">Price can't be negative.</small>
+  }
+
+  <label>
+    Notes
+    <textarea formControlName="notes" rows="2"></textarea>
+  </label>
+
+  <button type="submit">Add item</button>
+</form>

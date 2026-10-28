@@ -1,0 +1,7 @@
+.item-form { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+.row { display: flex; gap: 1rem; }
+.row label { flex: 1; }
+label { display: flex; flex-direction: column; gap: 0.25rem; font-weight: 600; }
+input, select, textarea { padding: 0.5rem; font-size: 1rem; font-family: inherit; }
+button { padding: 0.6rem; font-size: 1rem; cursor: pointer; }
+.field-error { color: #b91c1c; }
