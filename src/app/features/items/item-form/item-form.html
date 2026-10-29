@@ -73,10 +73,32 @@
     <textarea formControlName="notes" rows="2"></textarea>
   </label>
 
+  <div class="photo">
+    <span class="photo-label">Photo</span>
+
+    @if (displayImage(); as src) {
+      <img [src]="src" alt="Item photo" class="photo-preview" />
+    }
+
+    <div class="photo-actions">
+      <label class="file-button">
+        {{ displayImage() ? 'Change photo' : 'Add photo' }}
+        <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
+      </label>
+      @if (displayImage()) {
+        <button type="button" (click)="removePhoto()">Remove</button>
+      }
+    </div>
+
+    @if (imageError()) { <small class="field-error">{{ imageError() }}</small> }
+  </div>
+
   <div class="buttons">
-    <button type="submit">{{ isEdit() ? 'Save changes' : 'Add item' }}</button>
+    <button type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : (isEdit() ? 'Save changes' : 'Add item') }}
+    </button>
     @if (isEdit()) {
-      <button type="button" (click)="cancel()">Cancel</button>
+    <button type="button" (click)="cancel()">Cancel</button>
     }
   </div>
 </form>

@@ -13,11 +13,13 @@ export interface Item {
   purchase_price: number | null;
   notes: string | null;
   details: Record<string, unknown>;
+  image_path: string | null;
   created_at: string;
 }
 
-export type NewItem = Omit<Item, 'id' | 'created_at'>;
-
+export type NewItem = Omit<Item, 'id' | 'created_at' | 'image_path'> & {
+  image_path?: string | null;
+};
 export interface DetailField {
   key: string;
   label: string;

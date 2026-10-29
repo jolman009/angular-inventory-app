@@ -45,13 +45,18 @@
     <ul class="items">
       @for (item of store.filtered(); track item.id) {
         <li [class.selected]="store.selectedId() === item.id" (click)="store.selectedId.set(item.id)">
-          <div>
-            <strong>{{ item.title }}</strong>
-            <span class="muted"> · {{ item.type }}</span>
-            @if (item.condition) { <span class="muted"> · {{ item.condition }}</span> }
-            @if (detailSummary(item)) {
-              <div class="muted small">{{ detailSummary(item) }}</div>
+                    <div class="main">
+            @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
+              <img [src]="url" [alt]="item.title" class="thumb" />
             }
+            <div>
+              <strong>{{ item.title }}</strong>
+              <span class="muted"> · {{ item.type }}</span>
+              @if (item.condition) { <span class="muted"> · {{ item.condition }}</span> }
+              @if (detailSummary(item)) {
+                <div class="muted small">{{ detailSummary(item) }}</div>
+              }
+            </div>
           </div>
 
           <div class="actions">
