@@ -49,6 +49,9 @@
             <strong>{{ item.title }}</strong>
             <span class="muted"> · {{ item.type }}</span>
             @if (item.condition) { <span class="muted"> · {{ item.condition }}</span> }
+            @if (detailSummary(item)) {
+              <div class="muted small">{{ detailSummary(item) }}</div>
+            }
           </div>
 
           <div class="actions">

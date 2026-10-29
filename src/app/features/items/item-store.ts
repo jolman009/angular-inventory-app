@@ -27,7 +27,7 @@ export class ItemStore {
       i =>
         (type === 'all' || i.type === type) &&
         (status === 'all' || i.status === status) &&
-        (!q || i.title.toLowerCase().includes(q)),
+        (!q || `${i.title} ${Object.values(i.details).join(' ')}`.toLowerCase().includes(q)),
     );
   });
 

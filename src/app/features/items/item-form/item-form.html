@@ -18,12 +18,40 @@
   </div>
 
   <label>
-    Title
-    <input formControlName="title" placeholder="e.g. Abbey Road" />
+    {{ titleLabel().label }}
+    <input formControlName="title" [placeholder]="titleLabel().placeholder" />
   </label>
   @if (form.controls.title.touched && form.controls.title.hasError('required')) {
-    <small class="field-error">Title is required.</small>
+    <small class="field-error">{{ titleLabel().label }} is required.</small>
   }
+
+  <fieldset formGroupName="details" class="details">
+    <legend>{{ currentType() }} details</legend>
+    <div class="grid">
+            @for (f of detailFields(); track currentType() + ':' + f.key) {
+        <label>
+          {{ f.label }}
+          @if (f.kind === 'select') {
+            <select [formControlName]="f.key">
+              <option value="">Select…</option>
+              @for (o of f.options ?? []; track o) {
+                <option [value]="o">{{ o }}</option>
+              }
+            </select>
+          } @else {
+            <input
+              [formControlName]="f.key"
+              [placeholder]="f.placeholder ?? ''"
+              [attr.inputmode]="f.kind === 'number' ? 'numeric' : null"
+            />
+          }
+          @if (detailsGroup.controls[f.key]?.touched && detailsGroup.controls[f.key]?.hasError('pattern')) {
+            <small class="field-error">Numbers only.</small>
+          }
+        </label>
+      }
+    </div>
+  </fieldset>
 
   <div class="row">
     <label>

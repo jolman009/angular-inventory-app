@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Supabase } from '../../../core/supabase';
 import { ItemForm } from '../item-form/item-form';
 import { ItemStore } from '../item-store';
-import { ITEM_STATUSES, ItemStatus, MEDIA_TYPES, MediaType } from '../item.model';
+import { DETAIL_FIELDS, ITEM_STATUSES, Item, ItemStatus, MEDIA_TYPES, MediaType } from '../item.model';
 
 @Component({
   selector: 'app-item-list',
@@ -33,6 +33,13 @@ export class ItemList implements OnInit {
   startEdit(id: string) {
     this.editingId.set(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  detailSummary(item: Item): string {
+    return DETAIL_FIELDS[item.type]
+      .map(f => item.details[f.key])
+      .filter(v => v !== undefined && v !== '')
+      .join(' · ');
   }
 
   onSearch(e: Event) {
