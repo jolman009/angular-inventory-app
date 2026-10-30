@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Supabase } from '../../core/supabase';
-import { Item, ItemStatus, MediaType, NewItem } from './item.model';
+import { Item, ItemStatus, MediaType, NewItem, SortKey } from './item.model';
 
 const BUCKET = 'item-images';
 
@@ -21,20 +21,60 @@ export class ItemStore {
   readonly statusFilter = signal<ItemStatus | 'all'>('all');
   readonly search = signal('');
   readonly selectedId = signal<string | null>(null);
+  readonly sortBy = signal<SortKey>('newest');
 
   // ---- derived state ----
-  readonly filtered = computed(() => {
+   readonly filtered = computed(() => {
     const type = this.typeFilter();
     const status = this.statusFilter();
     const q = this.search().trim().toLowerCase();
 
-    return this.items().filter(
+    const matches = this.items().filter(
       i =>
         (type === 'all' || i.type === type) &&
         (status === 'all' || i.status === status) &&
         (!q || `${i.title} ${Object.values(i.details).join(' ')}`.toLowerCase().includes(q)),
     );
+
+    return this.sortItems(matches, this.sortBy());
   });
+
+  private sortItems(list: Item[], key: SortKey): Item[] {
+    const sorted = [...list]; // copy, so we never reorder the source array
+
+    const year = (i: Item) => (typeof i.details['year'] === 'number' ? (i.details['year'] as number) : null);
+    const price = (i: Item) => i.purchase_price;
+
+    // Numeric sort where items with no value always land at the bottom
+    const byNumber =
+      (get: (i: Item) => number | null, direction: 1 | -1) => (a: Item, b: Item) => {
+        const x = get(a);
+        const y = get(b);
+        if (x === null && y === null) return 0;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        return (x - y) * direction;
+      };
+
+    switch (key) {
+      case 'oldest':
+        return sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      case 'title':
+        return sorted.sort((a, b) =>
+          a.title.localeCompare(b.title, undefined, { sensitivity: 'base', numeric: true }),
+        );
+      case 'price_high':
+        return sorted.sort(byNumber(price, -1));
+      case 'price_low':
+        return sorted.sort(byNumber(price, 1));
+      case 'year_new':
+        return sorted.sort(byNumber(year, -1));
+      case 'year_old':
+        return sorted.sort(byNumber(year, 1));
+      default: // 'newest'
+        return sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    }
+  }
 
   readonly selected = computed(
     () => this.items().find(i => i.id === this.selectedId()) ?? null,

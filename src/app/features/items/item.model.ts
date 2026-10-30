@@ -67,3 +67,22 @@ export const TITLE_LABELS: Record<MediaType, { label: string; placeholder: strin
   game: { label: 'Title', placeholder: 'e.g. Super Metroid' },
   vinyl: { label: 'Album', placeholder: 'e.g. Abbey Road' },
 };
+
+export type SortKey =
+  | 'newest'
+  | 'oldest'
+  | 'title'
+  | 'price_high'
+  | 'price_low'
+  | 'year_new'
+  | 'year_old';
+
+export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'newest', label: 'Newest added' },
+  { value: 'oldest', label: 'Oldest added' },
+  { value: 'title', label: 'Title A–Z' },
+  { value: 'price_high', label: 'Price: high to low' },
+  { value: 'price_low', label: 'Price: low to high' },
+  { value: 'year_new', label: 'Year: newest first' },
+  { value: 'year_old', label: 'Year: oldest first' },
+];

@@ -11,6 +11,8 @@ import {
   ItemStatus,
   MEDIA_TYPES,
   MediaType,
+  SORT_OPTIONS,
+  SortKey,
 } from '../item.model';
 
 @Component({
@@ -34,6 +36,7 @@ export class ItemList implements OnInit {
     () => this.store.items().find(i => i.id === this.editingId()) ?? null,
   );
   protected readonly formOpen = computed(() => this.adding() || this.editingItem() !== null);
+  protected readonly sortOptions = SORT_OPTIONS;
 
   ngOnInit() {
     this.store.load();
@@ -73,6 +76,10 @@ export class ItemList implements OnInit {
   }
   onStatusChange(id: string, e: Event) {
     this.store.setStatus(id, (e.target as HTMLSelectElement).value as ItemStatus);
+  }
+
+  onSort(e: Event) {
+    this.store.sortBy.set((e.target as HTMLSelectElement).value as SortKey);
   }
 
   async signOut() {
