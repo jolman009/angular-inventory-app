@@ -4,7 +4,14 @@ import { Router } from '@angular/router';
 import { Supabase } from '../../../core/supabase';
 import { ItemForm } from '../item-form/item-form';
 import { ItemStore } from '../item-store';
-import { DETAIL_FIELDS, ITEM_STATUSES, Item, ItemStatus, MEDIA_TYPES, MediaType } from '../item.model';
+import {
+  DETAIL_FIELDS,
+  ITEM_STATUSES,
+  Item,
+  ItemStatus,
+  MEDIA_TYPES,
+  MediaType,
+} from '../item.model';
 
 @Component({
   selector: 'app-item-list',
@@ -20,11 +27,13 @@ export class ItemList implements OnInit {
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
 
-  // Which item (if any) is being edited
+  // Form visibility: open for "add" or while an item is being edited
+  protected readonly adding = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected readonly editingItem = computed(
     () => this.store.items().find(i => i.id === this.editingId()) ?? null,
   );
+  protected readonly formOpen = computed(() => this.adding() || this.editingItem() !== null);
 
   ngOnInit() {
     this.store.load();
@@ -33,6 +42,17 @@ export class ItemList implements OnInit {
   startEdit(id: string) {
     this.editingId.set(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  closeForm() {
+    this.adding.set(false);
+    this.editingId.set(null);
+  }
+
+  onDelete(item: Item) {
+    if (confirm(`Delete "${item.title}"? This can't be undone.`)) {
+      this.store.remove(item.id);
+    }
   }
 
   detailSummary(item: Item): string {

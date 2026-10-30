@@ -4,48 +4,68 @@
       <h1>My Collection</h1>
       <p class="muted">{{ supabase.session()?.user?.email }}</p>
     </div>
-    <button (click)="signOut()">Sign out</button>
+    <button type="button" (click)="signOut()">Sign out</button>
   </header>
 
-  <section class="stats">
-    <span>{{ store.items().length }} items</span>
-    <span>{{ store.totalSpent() | currency }} spent</span>
+  <section class="stats" aria-label="Collection summary">
+    <span class="chip">{{ store.items().length }} items</span>
+    <span class="chip">{{ store.totalSpent() | currency }} spent</span>
     @for (s of statuses; track s) {
       @if (store.countsByStatus()[s]) {
-        <span>{{ s }}: {{ store.countsByStatus()[s] }}</span>
+        <span class="chip">{{ s }}: {{ store.countsByStatus()[s] }}</span>
       }
     }
   </section>
 
-  <app-item-form [item]="editingItem()" (done)="editingId.set(null)" />
+  @if (formOpen()) {
+    <app-item-form [item]="editingItem()" (done)="closeForm()" />
+  }
 
-  @if (store.error()) { <p class="error">{{ store.error() }}</p> }
+  @if (store.error()) {
+    <p class="error" role="alert">{{ store.error() }}</p>
+  }
 
-  <section class="filters">
-    <input type="search" placeholder="Search titles…" [value]="store.search()" (input)="onSearch($event)" />
+  <div class="toolbar">
+    <section class="filters">
+      <input
+        type="search"
+        placeholder="Search…"
+        aria-label="Search collection"
+        [value]="store.search()"
+        (input)="onSearch($event)"
+      />
 
-    <select (change)="onTypeFilter($event)">
-      <option value="all" [selected]="store.typeFilter() === 'all'">All types</option>
-      @for (t of types; track t) {
-        <option [value]="t" [selected]="store.typeFilter() === t">{{ t }}</option>
-      }
-    </select>
+      <select aria-label="Filter by type" (change)="onTypeFilter($event)">
+        <option value="all" [selected]="store.typeFilter() === 'all'">All types</option>
+        @for (t of types; track t) {
+          <option [value]="t" [selected]="store.typeFilter() === t">{{ t }}</option>
+        }
+      </select>
 
-    <select (change)="onStatusFilter($event)">
-      <option value="all" [selected]="store.statusFilter() === 'all'">All statuses</option>
-      @for (s of statuses; track s) {
-        <option [value]="s" [selected]="store.statusFilter() === s">{{ s }}</option>
-      }
-    </select>
-  </section>
+      <select aria-label="Filter by status" (change)="onStatusFilter($event)">
+        <option value="all" [selected]="store.statusFilter() === 'all'">All statuses</option>
+        @for (s of statuses; track s) {
+          <option [value]="s" [selected]="store.statusFilter() === s">{{ s }}</option>
+        }
+      </select>
+    </section>
+
+    @if (!formOpen()) {
+      <button type="button" class="btn-primary" (click)="adding.set(true)">+ Add item</button>
+    }
+  </div>
 
   @if (store.loading()) {
-    <p>Loading…</p>
+    <p class="muted">Loading…</p>
   } @else {
     <ul class="items">
       @for (item of store.filtered(); track item.id) {
-        <li [class.selected]="store.selectedId() === item.id" (click)="store.selectedId.set(item.id)">
-                    <div class="main">
+        <li
+          [attr.data-status]="item.status"
+          [class.selected]="store.selectedId() === item.id"
+          (click)="store.selectedId.set(item.id)"
+        >
+          <div class="main">
             @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
               <img [src]="url" [alt]="item.title" class="thumb" />
             }
@@ -60,17 +80,23 @@
           </div>
 
           <div class="actions">
-            <select (change)="onStatusChange(item.id, $event)" (click)="$event.stopPropagation()">
-            @for (s of statuses; track s) {
-            <option [value]="s" [selected]="s === item.status">{{ s }}</option>
-            }
-           </select>
-            <button (click)="startEdit(item.id); $event.stopPropagation()">Edit</button>
-            <button (click)="store.remove(item.id); $event.stopPropagation()">Delete</button>
+            <select
+              [attr.aria-label]="'Status for ' + item.title"
+              (change)="onStatusChange(item.id, $event)"
+              (click)="$event.stopPropagation()"
+            >
+              @for (s of statuses; track s) {
+                <option [value]="s" [selected]="s === item.status">{{ s }}</option>
+              }
+            </select>
+            <button type="button" (click)="startEdit(item.id); $event.stopPropagation()">Edit</button>
+            <button type="button" class="danger" (click)="onDelete(item); $event.stopPropagation()">
+              Delete
+            </button>
           </div>
         </li>
       } @empty {
-        <li class="empty">Nothing matches yet. Add your first item above.</li>
+        <li class="empty">Nothing matches yet. Tap “+ Add item” to start your collection.</li>
       }
     </ul>
   }

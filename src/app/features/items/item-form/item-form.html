@@ -97,8 +97,6 @@
     <button type="submit" [disabled]="saving()">
       {{ saving() ? 'Saving…' : (isEdit() ? 'Save changes' : 'Add item') }}
     </button>
-    @if (isEdit()) {
-    <button type="button" (click)="cancel()">Cancel</button>
-    }
+        <button type="button" (click)="cancel()">{{ isEdit() ? 'Cancel' : 'Done' }}</button>
   </div>
 </form>
