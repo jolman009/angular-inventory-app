@@ -1,0 +1,49 @@
+<section class="import">
+  <h2>Import from CSV</h2>
+  <p class="muted">
+    Your file needs a heading row with at least <strong>type</strong> and <strong>title</strong>.
+    <button type="button" class="link" (click)="downloadTemplate()">Download a template</button>
+  </p>
+
+  <div class="actions">
+    <label class="file-button">
+      Choose CSV file
+      <input type="file" accept=".csv,text/csv" (change)="onFile($event)" hidden />
+    </label>
+    <button type="button" (click)="done.emit()">Close</button>
+  </div>
+
+  @if (readError()) {
+    <p class="bad" role="alert">{{ readError() }}</p>
+  }
+
+  @if (result(); as r) {
+    <p class="muted">{{ fileName() }}</p>
+    <p><strong>{{ r.valid.length }}</strong> rows are ready to import.</p>
+
+    @if (r.errors.length) {
+      <p class="bad"><strong>{{ r.errors.length }}</strong> rows have problems and will be skipped:</p>
+      <ul class="errors">
+        @for (err of shownErrors(); track err.row) {
+          <li>Row {{ err.row }}: {{ err.message }}</li>
+        }
+      </ul>
+      @if (r.errors.length > shownErrors().length) {
+        <p class="muted">…and {{ r.errors.length - shownErrors().length }} more.</p>
+      }
+    }
+
+    <button
+      type="button"
+      class="btn-primary"
+      [disabled]="importing() || !r.valid.length"
+      (click)="runImport()"
+    >
+      {{ importing() ? 'Importing…' : 'Import ' + r.valid.length + ' items' }}
+    </button>
+  }
+
+  @if (imported() !== null) {
+    <p class="good">Imported {{ imported() }} items.</p>
+  }
+</section>

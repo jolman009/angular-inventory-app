@@ -14,10 +14,12 @@ import {
   SORT_OPTIONS,
   SortKey,
 } from '../item.model';
+import { CsvImport } from '../csv-import/csv-import';
+import { downloadCsv, itemsToCsv } from '../csv';
 
 @Component({
   selector: 'app-item-list',
-  imports: [ItemForm, CurrencyPipe],
+  imports: [ItemForm, CsvImport, CurrencyPipe],
   templateUrl: './item-list.html',
   styleUrl: './item-list.scss',
 })
@@ -37,6 +39,7 @@ export class ItemList implements OnInit {
   );
   protected readonly formOpen = computed(() => this.adding() || this.editingItem() !== null);
   protected readonly sortOptions = SORT_OPTIONS;
+  protected readonly importOpen = signal(false);
 
   ngOnInit() {
     this.store.load();
@@ -50,6 +53,11 @@ export class ItemList implements OnInit {
   closeForm() {
     this.adding.set(false);
     this.editingId.set(null);
+  }
+
+exportCsv() {                                              // ← new, with the other methods
+    const today = new Date().toISOString().slice(0, 10);
+    downloadCsv(`my-collection-${today}.csv`, itemsToCsv(this.store.items()));
   }
 
   onDelete(item: Item) {

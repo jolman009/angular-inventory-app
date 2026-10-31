@@ -21,6 +21,10 @@
     <app-item-form [item]="editingItem()" (done)="closeForm()" />
   }
 
+    @if (importOpen()) {
+    <app-csv-import (done)="importOpen.set(false)" />
+  }
+  
   @if (store.error()) {
     <p class="error" role="alert">{{ store.error() }}</p>
   }
@@ -56,9 +60,13 @@
       </select>
     </section>
 
-    @if (!formOpen()) {
-      <button type="button" class="btn-primary" (click)="adding.set(true)">+ Add item</button>
-    }
+      <div class="toolbar-actions">
+      @if (!formOpen()) {
+        <button type="button" class="btn-primary" (click)="adding.set(true)">+ Add item</button>
+      }
+      <button type="button" (click)="importOpen.set(true)">Import</button>
+      <button type="button" (click)="exportCsv()" [disabled]="!store.items().length">Export</button>
+    </div>
   </div>
 
   @if (store.loading()) {

@@ -121,6 +121,25 @@ export class ItemStore {
     await this.signImages();
   }
 
+  /** Saves many items at once, in chunks of 100. Returns how many were saved. */
+  async addMany(rows: NewItem[]): Promise<number> {
+    this.error.set(null);
+    let added = 0;
+
+    for (let i = 0; i < rows.length; i += 100) {
+      const chunk = rows.slice(i, i + 100);
+      const { data, error } = await this.db.from('items').insert(chunk).select();
+
+      if (error) {
+        this.error.set(`Saved ${added} of ${rows.length} rows, then stopped: ${error.message}`);
+        break;
+      }
+      this.items.update(list => [...(data as Item[]), ...list]);
+      added += chunk.length;
+    }
+    return added;
+  }
+
   async update(id: string, changes: Partial<NewItem>) {
     this.error.set(null);
     const oldPath = this.items().find(i => i.id === id)?.image_path ?? null;
