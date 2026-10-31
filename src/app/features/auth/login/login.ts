@@ -1,7 +1,24 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { Supabase } from '../../../core/supabase';
+
+// Keep this in sync with the minimum length set in Supabase (Authentication settings)
+const MIN_PASSWORD = 10;
+
+/** Group-level check: the two password boxes must match (only while confirm is enabled). */
+const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const confirm = group.get('confirm');
+  if (!confirm || confirm.disabled) return null;
+  return group.get('password')?.value === confirm.value ? null : { mismatch: true };
+};
 
 @Component({
   selector: 'app-login',
@@ -14,20 +31,44 @@ export class Login {
   private supabase = inject(Supabase);
   private router = inject(Router);
 
+  protected readonly minPassword = MIN_PASSWORD;
+
   readonly mode = signal<'signin' | 'signup'>('signin');
+  readonly showPassword = signal(false);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly message = signal<string | null>(null);
 
-  form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-  });
+  form = this.fb.nonNullable.group(
+        {
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]],
+      // starts disabled: a disabled control is ignored by validation
+      confirm: [{ value: '', disabled: true }],
+    },
+    { validators: [passwordsMatch] },
+  );
 
   toggleMode() {
-    this.mode.update(m => (m === 'signin' ? 'signup' : 'signin'));
+    const next = this.mode() === 'signin' ? 'signup' : 'signin';
+    this.mode.set(next);
     this.error.set(null);
     this.message.set(null);
+    this.showPassword.set(false);
+
+    const { password, confirm } = this.form.controls;
+    confirm.reset('');
+
+    if (next === 'signup') {
+      password.setValidators([Validators.required, Validators.minLength(MIN_PASSWORD)]);
+      confirm.enable();
+    } else {
+      password.setValidators([Validators.required]);
+      confirm.disable();
+    }
+
+    password.updateValueAndValidity();
+    this.form.markAsUntouched();
   }
 
   async submit() {
