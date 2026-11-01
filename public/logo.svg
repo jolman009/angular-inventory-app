@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Shoebox">
+  <rect width="512" height="512" rx="116" fill="#2563eb"/>
+  <!-- lid, tilted open at the left, sitting behind the card -->
+  <g transform="rotate(9 400 268)">
+    <rect x="104" y="222" width="300" height="48" rx="12" fill="#c9d8f7"/>
+    <rect x="104" y="256" width="300" height="14" rx="7" fill="#aebfe6"/>
+  </g>
+
+  <!-- index card standing in the box -->
+  <g transform="rotate(-6 262 250)">
+    <rect x="186" y="118" width="152" height="210" rx="9" fill="#fffef8"/>
+    <rect x="186" y="164" width="152" height="5" fill="#e0484f"/>
+    <rect x="206" y="138" width="86" height="10" rx="5" fill="#1e2a44"/>
+    <rect x="206" y="190" width="108" height="6" rx="3" fill="#a9c1f2"/>
+    <rect x="206" y="216" width="96" height="6" rx="3" fill="#a9c1f2"/>
+    <rect x="206" y="242" width="108" height="6" rx="3" fill="#a9c1f2"/>
+  </g>
+
+  <!-- box body -->
+  <rect x="112" y="262" width="288" height="142" rx="16" fill="#ffffff"/>
+  <rect x="112" y="262" width="288" height="14" fill="#e3ebfb"/>
+
+  <!-- label on the front -->
+  <rect x="196" y="304" width="120" height="58" rx="8" fill="#eaf0fd" stroke="#9db8f0" stroke-width="4"/>
+  <rect x="214" y="321" width="84" height="8" rx="4" fill="#1e2a44"/>
+  <rect x="214" y="341" width="56" height="8" rx="4" fill="#7f9ee6"/>
+
+</svg>

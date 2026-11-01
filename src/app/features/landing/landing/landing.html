@@ -1,0 +1,52 @@
+<div class="page">
+  <header class="nav">
+    <a class="brand" routerLink="/">
+      <img src="logo.svg" alt="" width="36" height="36" />
+      <span>{{ brand.name }}</span>
+    </a>
+    <a class="signin-link" routerLink="/login">Sign in</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <h1>{{ brand.taglineLead }}<br />{{ brand.taglineTail }}</h1>
+        <p class="lead">
+          A private catalog for the things you collect. Record what you own, what you want, and
+          what you've lent out, then find any of it in seconds.
+        </p>
+        <a class="cta" routerLink="/login" [queryParams]="{ mode: 'signup' }">Create account</a>
+      </div>
+
+      <div class="card-stack">
+        <article class="card" aria-label="Example catalog card for a baseball card">
+          <div class="rules" aria-hidden="true"></div>
+          <p class="head">Griffey, Ken, Jr.</p>
+          <p class="line">Upper Deck, 1989. No. 1.</p>
+          <p class="line">Seattle Mariners. Baseball.</p>
+          <p class="line">Condition: near mint.</p>
+          <p class="line">Status: owned.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="ledger" aria-labelledby="ledger-title">
+      <h2 id="ledger-title">What goes in the box</h2>
+      <dl>
+        @for (f of features; track f.title) {
+          <div class="row">
+            <dt>{{ f.title }}</dt>
+            <dd>{{ f.text }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="closing">
+      <p>Ready to start your catalog?</p>
+      <a class="cta" routerLink="/login" [queryParams]="{ mode: 'signup' }">Create account</a>
+    </section>
+  </main>
+
+  <footer class="foot">© {{ year }} {{ brand.name }}</footer>
+</div>

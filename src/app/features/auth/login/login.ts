@@ -7,7 +7,8 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BRAND } from '../../../core/brand';
 import { Supabase } from '../../../core/supabase';
 
 // Keep this in sync with the minimum length set in Supabase (Authentication settings)
@@ -22,7 +23,7 @@ const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors |
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -30,6 +31,8 @@ export class Login {
   private fb = inject(FormBuilder);
   private supabase = inject(Supabase);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  protected readonly brand = BRAND;
 
   protected readonly minPassword = MIN_PASSWORD;
 
@@ -48,6 +51,12 @@ export class Login {
     },
     { validators: [passwordsMatch] },
   );
+
+  constructor() {
+    if (this.route.snapshot.queryParamMap.get('mode') === 'signup') {
+      this.toggleMode();
+    }
+  }
 
   toggleMode() {
     const next = this.mode() === 'signin' ? 'signup' : 'signin';
@@ -87,11 +96,11 @@ export class Login {
     if (this.mode() === 'signin') {
       const { error } = await auth.signInWithPassword({ email, password });
       if (error) this.error.set(error.message);
-      else await this.router.navigateByUrl('/');
+      else await this.router.navigateByUrl('/collection');
     } else {
       const { data, error } = await auth.signUp({ email, password });
       if (error) this.error.set(error.message);
-      else if (data.session) await this.router.navigateByUrl('/');
+      else if (data.session) await this.router.navigateByUrl('/collection');
       else this.message.set('Check your email to confirm your account, then sign in.');
     }
 

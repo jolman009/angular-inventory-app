@@ -92,6 +92,6 @@ exportCsv() {                                              // ← new, with the 
 
   async signOut() {
     await this.supabase.client.auth.signOut();
-    await this.router.navigateByUrl('/login');
+    await this.router.navigateByUrl('/');
   }
 }

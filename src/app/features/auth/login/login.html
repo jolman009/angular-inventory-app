@@ -1,4 +1,8 @@
 <main class="login">
+  <a class="brand" routerLink="/">
+    <img src="logo.svg" alt="" width="28" height="28" />
+    <span>{{ brand.name }}</span>
+  </a>
   <h1>{{ mode() === 'signin' ? 'Sign in' : 'Create account' }}</h1>
 
   <form [formGroup]="form" (ngSubmit)="submit()">
