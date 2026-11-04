@@ -1,0 +1,57 @@
+<section class="capture">
+  <h2>Quick capture</h2>
+  <p class="muted">Take photos now and add the details later. Each photo is saved as a draft.</p>
+
+  <div class="types" role="radiogroup" aria-label="What are you photographing?">
+    @for (t of types; track t) {
+      <button
+        type="button"
+        role="radio"
+        [attr.aria-checked]="type() === t"
+        [class.on]="type() === t"
+        (click)="type.set(t)"
+      >
+        {{ t }}
+      </button>
+    }
+  </div>
+
+  <div class="actions">
+    <label class="shutter">
+      Take photo
+      <input type="file" accept="image/*" capture="environment" hidden (change)="onFiles($event)" />
+    </label>
+    <label class="file-button">
+      Choose photos
+      <input type="file" accept="image/*" multiple hidden (change)="onFiles($event)" />
+    </label>
+    <button type="button" (click)="done.emit()">Done</button>
+  </div>
+
+  @if (shots().length) {
+    <p class="summary">
+      <strong>{{ savedCount() }}</strong> saved
+      @if (busy()) { <span class="muted">· Saving…</span> }
+    </p>
+
+    <ul class="shots">
+      @for (s of shots(); track s.id) {
+        <li [attr.data-status]="s.status">
+          @if (s.preview) {
+            <img [src]="s.preview" alt="" />
+          } @else {
+            <div class="ph"></div>
+          }
+          <span class="state">
+            {{ s.status === 'failed' ? s.message : (s.status === 'saved' ? 'Saved' : 'Saving…') }}
+          </span>
+          <span class="kind">{{ s.type }}</span>
+        </li>
+      }
+    </ul>
+
+    @if (savedCount() > 0 && !busy()) {
+      <button type="button" class="btn-primary" (click)="review.emit()">Review drafts</button>
+    }
+  }
+</section>

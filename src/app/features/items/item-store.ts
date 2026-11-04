@@ -23,13 +23,21 @@ export class ItemStore {
   readonly selectedId = signal<string | null>(null);
   readonly sortBy = signal<SortKey>('newest');
 
+  // Drafts are photos waiting for details. Everything else is the real collection.
+  readonly committed = computed(() => this.items().filter(i => !i.draft));
+  readonly drafts = computed(() =>
+    this.items()
+      .filter(i => i.draft)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at)), // oldest first = order shot
+  );
+
   // ---- derived state ----
    readonly filtered = computed(() => {
     const type = this.typeFilter();
     const status = this.statusFilter();
     const q = this.search().trim().toLowerCase();
 
-    const matches = this.items().filter(
+    const matches = this.committed().filter(
       i =>
         (type === 'all' || i.type === type) &&
         (status === 'all' || i.status === status) &&
@@ -82,12 +90,12 @@ export class ItemStore {
 
   readonly countsByStatus = computed(() => {
     const counts: Partial<Record<ItemStatus, number>> = {};
-    for (const i of this.items()) counts[i.status] = (counts[i.status] ?? 0) + 1;
+    for (const i of this.committed()) counts[i.status] = (counts[i.status] ?? 0) + 1;
     return counts;
   });
 
   readonly totalSpent = computed(() =>
-    this.items().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
+    this.committed().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
   );
 
   // ---- item actions ----
@@ -119,6 +127,30 @@ export class ItemStore {
     }
     this.items.update(list => [data as Item, ...list]);
     await this.signImages();
+  }
+
+    /** Quick capture: uploads one photo and saves it as a draft item. Returns true on success. */
+  async addDraft(type: MediaType, photo: Blob): Promise<boolean> {
+    const path = await this.uploadImage(photo);
+    if (!path) return false;
+
+    await this.add({
+      type,
+      title: `Untitled ${type}`,
+      status: 'owned',
+      condition: null,
+      purchase_price: null,
+      notes: null,
+      details: {},
+      draft: true,
+      image_path: path,
+    });
+
+    if (this.error()) {
+      await this.deleteFile(path); // don't leave an orphan photo behind
+      return false;
+    }
+    return true;
   }
 
   /** Saves many items at once, in chunks of 100. Returns how many were saved. */

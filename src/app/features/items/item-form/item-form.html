@@ -1,5 +1,5 @@
 <form [formGroup]="form" (ngSubmit)="submit()" class="item-form">
-  <h2>{{ isEdit() ? 'Edit item' : 'Add an item' }}</h2>
+  <h2>{{ isDraft() ? 'Add details' : (isEdit() ? 'Edit item' : 'Add an item') }}</h2>
 
   <div class="row">
     <label>
@@ -94,9 +94,12 @@
   </div>
 
   <div class="buttons">
-    <button type="submit" [disabled]="saving()">
-      {{ saving() ? 'Saving…' : (isEdit() ? 'Save changes' : 'Add item') }}
+        <button type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : (isDraft() ? 'Save item' : (isEdit() ? 'Save changes' : 'Add item')) }}
     </button>
         <button type="button" (click)="cancel()">{{ isEdit() ? 'Cancel' : 'Done' }}</button>
-  </div>
+    @if (isDraft()) {
+      <button type="button" class="danger" (click)="discard()">Discard draft</button>
+    }
+      </div>
 </form>

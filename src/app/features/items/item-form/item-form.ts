@@ -34,8 +34,10 @@ export class ItemForm {
 
   readonly item = input<Item | null>(null);
   readonly done = output<void>();
+  readonly saved = output<void>();
 
   protected readonly isEdit = computed(() => this.item() !== null);
+  protected readonly isDraft = computed(() => this.item()?.draft ?? false);
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
 
@@ -87,7 +89,7 @@ export class ItemForm {
         this.form.reset(
           {
             type: item.type,
-            title: item.title,
+            title: item.draft ? '' : item.title, // drafts start with an empty title to fill in
             status: item.status,
             condition: item.condition ?? '',
             purchase_price: item.purchase_price,
@@ -201,6 +203,7 @@ export class ItemForm {
       purchase_price: v.purchase_price,
       notes: v.notes.trim() || null,
       details: this.collectDetails(),
+      draft: false, // saving details turns a draft into a normal item
     };
 
     // Photo: upload a new one, or mark the existing one for removal
@@ -229,12 +232,21 @@ export class ItemForm {
     }
 
     this.clearPendingImage();
-    if (current) this.done.emit();
+    if (current) this.saved.emit();
     else this.form.reset({ type: v.type });
     this.saving.set(false);
   }
 
   cancel() {
     this.done.emit();
+  }
+
+  async discard() {
+  const current = this.item();
+  if (!current) return;
+  if (!confirm('Discard this draft and its photo?')) return;
+
+  await this.store.remove(current.id);
+  if (!this.store.error()) this.saved.emit();
   }
 }

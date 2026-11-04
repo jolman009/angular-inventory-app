@@ -8,7 +8,7 @@
   </header>
 
   <section class="stats" aria-label="Collection summary">
-    <span class="chip">{{ store.items().length }} items</span>
+    <span class="chip">{{ store.committed().length }} items</span>
     <span class="chip">{{ store.totalSpent() | currency }} spent</span>
     @for (s of statuses; track s) {
       @if (store.countsByStatus()[s]) {
@@ -17,14 +17,27 @@
     }
   </section>
 
-  @if (formOpen()) {
-    <app-item-form [item]="editingItem()" (done)="closeForm()" />
+  @if (store.drafts().length && !formOpen() && !captureOpen()) {
+    <div class="drafts-banner" role="status">
+      <span>
+        <strong>{{ store.drafts().length }}</strong>
+        {{ store.drafts().length === 1 ? 'photo needs' : 'photos need' }} details.
+      </span>
+      <button type="button" class="btn-primary" (click)="startReview()">Review drafts</button>
+    </div>
   }
+
+  @if (formOpen()) {
+    <app-item-form [item]="editingItem()" (done)="closeForm()" (saved)="onSaved()" />  }
 
     @if (importOpen()) {
     <app-csv-import (done)="importOpen.set(false)" />
   }
-  
+
+  @if (captureOpen()) {
+    <app-quick-capture (done)="captureOpen.set(false)" (review)="startReview()" />
+  }
+
   @if (store.error()) {
     <p class="error" role="alert">{{ store.error() }}</p>
   }
@@ -64,8 +77,9 @@
       @if (!formOpen()) {
         <button type="button" class="btn-primary" (click)="adding.set(true)">+ Add item</button>
       }
+      <button type="button" (click)="captureOpen.set(true)">Quick capture</button>
       <button type="button" (click)="importOpen.set(true)">Import</button>
-      <button type="button" (click)="exportCsv()" [disabled]="!store.items().length">Export</button>
+      <button type="button" (click)="exportCsv()" [disabled]="!store.committed().length">Export</button>
     </div>
   </div>
 

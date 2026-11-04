@@ -14,11 +14,13 @@ export interface Item {
   notes: string | null;
   details: Record<string, unknown>;
   image_path: string | null;
+  draft: boolean;
   created_at: string;
 }
 
-export type NewItem = Omit<Item, 'id' | 'created_at' | 'image_path'> & {
+export type NewItem = Omit<Item, 'id' | 'created_at' | 'image_path' | 'draft'> & {
   image_path?: string | null;
+  draft?: boolean;
 };
 export interface DetailField {
   key: string;
