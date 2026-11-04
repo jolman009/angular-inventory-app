@@ -1,6 +1,8 @@
 <form [formGroup]="form" (ngSubmit)="submit()" class="item-form">
   <h2>{{ isDraft() ? 'Add details' : (isEdit() ? 'Edit item' : 'Add an item') }}</h2>
-
+  @if (isDraft()) {
+    <p class="muted">Suggestions come from your photo and can be wrong. Check each field before saving.</p>
+  }
   <div class="row">
     <label>
       Type

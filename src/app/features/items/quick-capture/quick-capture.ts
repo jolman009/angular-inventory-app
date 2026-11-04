@@ -9,6 +9,7 @@ interface Shot {
   preview: string | null;
   status: 'saving' | 'saved' | 'failed';
   message?: string;
+  note?: string;
 }
 
 @Component({
@@ -46,17 +47,19 @@ export class QuickCapture implements OnDestroy {
     this.chain = this.chain.then(() => this.save(id, file, type));
   }
 
-  private async save(id: number, file: File, type: MediaType) {
+    private async save(id: number, file: File, type: MediaType) {
     try {
       const blob = await resizeImage(file);
-      this.patch(id, { preview: URL.createObjectURL(blob) });
+      this.patch(id, { preview: URL.createObjectURL(blob), note: 'Reading photo…' });
 
-      const ok = await this.store.addDraft(type, blob);
+      const { suggestion, notice } = await this.store.scanPhoto(type, blob);
+      const ok = await this.store.addDraft(type, blob, suggestion);
+
       this.patch(
         id,
         ok
-          ? { status: 'saved' }
-          : { status: 'failed', message: this.store.error() ?? 'Could not save.' },
+          ? { status: 'saved', note: suggestion?.title ?? notice ?? 'No suggestions' }
+          : { status: 'failed', message: this.store.error() ?? 'Could not save.', note: undefined },
       );
     } catch {
       this.patch(id, { status: 'failed', message: 'Could not read that image. Try a JPEG or PNG.' });

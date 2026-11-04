@@ -88,3 +88,8 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'year_new', label: 'Year: newest first' },
   { value: 'year_old', label: 'Year: oldest first' },
 ];
+
+export interface ScanSuggestion {
+  title: string | null;
+  details: Record<string, unknown>;
+}

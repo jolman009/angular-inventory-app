@@ -1,6 +1,8 @@
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { blobToBase64 } from '../../core/blob';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Supabase } from '../../core/supabase';
-import { Item, ItemStatus, MediaType, NewItem, SortKey } from './item.model';
+import { Item, ItemStatus, MediaType, NewItem, ScanSuggestion, SortKey } from './item.model';
 
 const BUCKET = 'item-images';
 
@@ -129,19 +131,19 @@ export class ItemStore {
     await this.signImages();
   }
 
-    /** Quick capture: uploads one photo and saves it as a draft item. Returns true on success. */
-  async addDraft(type: MediaType, photo: Blob): Promise<boolean> {
+      /** Quick capture: uploads one photo and saves it as a draft item. Returns true on success. */
+  async addDraft(type: MediaType, photo: Blob, suggestion?: ScanSuggestion | null): Promise<boolean> {
     const path = await this.uploadImage(photo);
     if (!path) return false;
 
     await this.add({
       type,
-      title: `Untitled ${type}`,
+      title: suggestion?.title || `Untitled ${type}`,
       status: 'owned',
       condition: null,
       purchase_price: null,
       notes: null,
-      details: {},
+      details: suggestion?.details ?? {},
       draft: true,
       image_path: path,
     });
@@ -151,6 +153,38 @@ export class ItemStore {
       return false;
     }
     return true;
+  }
+
+  /** Asks the scan function for suggested fields. Never throws; scanning is a best-effort extra. */
+  async scanPhoto(
+    type: MediaType,
+    photo: Blob,
+  ): Promise<{ suggestion: ScanSuggestion | null; notice: string | null }> {
+    try {
+      const image = await blobToBase64(photo);
+      const { data, error } = await this.db.functions.invoke('scan-item', {
+        body: { image, mimeType: 'image/jpeg', type },
+      });
+
+      if (error) {
+        let notice = 'Suggestions are unavailable right now.';
+        if (error instanceof FunctionsHttpError) {
+          try {
+            notice = (await error.context.json()).error ?? notice;
+          } catch {
+            // keep the generic message
+          }
+        }
+        return { suggestion: null, notice };
+      }
+
+      const suggestion = data as ScanSuggestion;
+      const found = !!suggestion?.title || Object.keys(suggestion?.details ?? {}).length > 0;
+      return { suggestion: found ? suggestion : null, notice: found ? null : 'Nothing readable found.' };
+    } catch (e) {
+      console.warn('Scan failed', e);
+      return { suggestion: null, notice: 'Suggestions are unavailable right now.' };
+    }
   }
 
   /** Saves many items at once, in chunks of 100. Returns how many were saved. */

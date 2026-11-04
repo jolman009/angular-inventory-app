@@ -77,3 +77,9 @@ h2 { font-size: 1.15rem; }
 .state { font-weight: 600; }
 .shots li[data-status='failed'] .state { color: var(--danger); font-weight: 400; }
 .kind { color: var(--muted); text-transform: capitalize; }
+.note {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

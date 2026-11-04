@@ -89,8 +89,7 @@ export class ItemForm {
         this.form.reset(
           {
             type: item.type,
-            title: item.draft ? '' : item.title, // drafts start with an empty title to fill in
-            status: item.status,
+            title: item.draft && item.title.startsWith('Untitled') ? '' : item.title,            status: item.status,
             condition: item.condition ?? '',
             purchase_price: item.purchase_price,
             notes: item.notes ?? '',
