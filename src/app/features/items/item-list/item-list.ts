@@ -17,7 +17,6 @@ import {
 } from '../item.model';
 import { CsvImport } from '../csv-import/csv-import';
 import { downloadCsv, itemsToCsv } from '../csv';
-
 @Component({
   selector: 'app-item-list',
   imports: [ItemForm, CsvImport, QuickCapture, CurrencyPipe],
