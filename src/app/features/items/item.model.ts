@@ -4,6 +4,21 @@ export type ItemStatus = 'owned' | 'wishlist' | 'for_sale' | 'sold' | 'lent';
 export const MEDIA_TYPES: MediaType[] = ['card', 'book', 'game', 'vinyl'];
 export const ITEM_STATUSES: ItemStatus[] = ['owned', 'wishlist', 'for_sale', 'sold', 'lent'];
 
+export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
+  card: 'Cards',
+  book: 'Books',
+  game: 'Games',
+  vinyl: 'Records',
+};
+
+export const STATUS_LABELS: Record<ItemStatus, string> = {
+  owned: 'Owned',
+  wishlist: 'Wishlist',
+  for_sale: 'For sale',
+  sold: 'Sold',
+  lent: 'Lent out',
+};
+
 export interface Item {
   id: string;
   type: MediaType;
@@ -76,6 +91,8 @@ export type SortKey =
   | 'title'
   | 'price_high'
   | 'price_low'
+  | 'value_high'
+  | 'value_low'
   | 'year_new'
   | 'year_old';
 
@@ -85,6 +102,8 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'title', label: 'Title A–Z' },
   { value: 'price_high', label: 'Price: high to low' },
   { value: 'price_low', label: 'Price: low to high' },
+  { value: 'value_high', label: 'Est. value: high to low' },
+  { value: 'value_low', label: 'Est. value: low to high' },
   { value: 'year_new', label: 'Year: newest first' },
   { value: 'year_old', label: 'Year: oldest first' },
 ];
@@ -92,4 +111,44 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 export interface ScanSuggestion {
   title: string | null;
   details: Record<string, unknown>;
+}
+
+export interface CardValuation {
+  medianPrice: number;
+  lowPrice: number;
+  highPrice: number;
+  sampleSize: number;
+  query: string;
+  ebaySearchUrl: string;
+  updatedAt: string;
+}
+
+export interface CardPriceQuery {
+  title: string;
+  year?: string | number | null;
+  set?: string | null;
+  card_number?: string | null;
+  grade?: string | null;
+  sport?: string | null;
+}
+
+export function getCardValuation(
+  details: Record<string, unknown> | null | undefined,
+): CardValuation | null {
+  if (!details || typeof details['valuation'] !== 'object' || details['valuation'] === null) {
+    return null;
+  }
+  const v = details['valuation'] as Record<string, unknown>;
+  if (typeof v['medianPrice'] !== 'number' || !Number.isFinite(v['medianPrice'])) {
+    return null;
+  }
+  return {
+    medianPrice: v['medianPrice'],
+    lowPrice: typeof v['lowPrice'] === 'number' ? v['lowPrice'] : v['medianPrice'],
+    highPrice: typeof v['highPrice'] === 'number' ? v['highPrice'] : v['medianPrice'],
+    sampleSize: typeof v['sampleSize'] === 'number' ? v['sampleSize'] : 1,
+    query: typeof v['query'] === 'string' ? v['query'] : '',
+    ebaySearchUrl: typeof v['ebaySearchUrl'] === 'string' ? v['ebaySearchUrl'] : 'https://www.ebay.com',
+    updatedAt: typeof v['updatedAt'] === 'string' ? v['updatedAt'] : '',
+  };
 }

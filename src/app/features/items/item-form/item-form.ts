@@ -1,4 +1,14 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -11,6 +21,7 @@ import {
 import { resizeImage } from '../../../core/resize-image';
 import { ItemStore } from '../item-store';
 import {
+  CardValuation,
   DETAIL_FIELDS,
   DetailField,
   ITEM_STATUSES,
@@ -20,13 +31,15 @@ import {
   MediaType,
   NewItem,
   TITLE_LABELS,
+  getCardValuation,
 } from '../item.model';
 
 @Component({
   selector: 'app-item-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CurrencyPipe],
   templateUrl: './item-form.html',
   styleUrl: './item-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ItemForm {
   private fb = inject(FormBuilder);
@@ -46,6 +59,11 @@ export class ItemForm {
   protected readonly detailFields = signal<DetailField[]>([]);
   protected readonly titleLabel = computed(() => TITLE_LABELS[this.currentType()]);
   protected readonly detailsGroup = new FormGroup<Record<string, AbstractControl>>({});
+
+  // eBay valuation state for cards
+  protected readonly valuation = signal<CardValuation | null>(null);
+  protected readonly estimating = signal(false);
+  protected readonly estimateNotice = signal<string | null>(null);
 
   // photo state
   protected readonly saving = signal(false);
@@ -84,12 +102,14 @@ export class ItemForm {
     effect(() => {
       const item = this.item();
       this.clearPendingImage();
+      this.estimateNotice.set(null);
 
       if (item) {
         this.form.reset(
           {
             type: item.type,
-            title: item.draft && item.title.startsWith('Untitled') ? '' : item.title,            status: item.status,
+            title: item.draft && item.title.startsWith('Untitled') ? '' : item.title,
+            status: item.status,
             condition: item.condition ?? '',
             purchase_price: item.purchase_price,
             notes: item.notes ?? '',
@@ -97,9 +117,11 @@ export class ItemForm {
           { emitEvent: false },
         );
         this.buildDetails(item.type, item.details);
+        this.valuation.set(getCardValuation(item.details));
       } else {
         this.form.reset(undefined, { emitEvent: false });
         this.buildDetails(this.form.controls.type.value);
+        this.valuation.set(null);
       }
     });
   }
@@ -136,7 +158,50 @@ export class ItemForm {
       if (!v) continue;
       out[f.key] = f.kind === 'number' ? Number(v) : v;
     }
+
+    if (this.currentType() === 'card' && this.valuation()) {
+      out['valuation'] = this.valuation();
+    }
+
     return out;
+  }
+
+  async checkEbayPrice() {
+    const title = this.form.controls.title.value.trim();
+    if (!title) {
+      this.estimateNotice.set('Enter the player name first to check eBay prices.');
+      return;
+    }
+
+    this.estimating.set(true);
+    this.estimateNotice.set(null);
+
+    const rawDetails = this.detailsGroup.getRawValue();
+    const { valuation, notice } = await this.store.estimateCardPrice({
+      title,
+      year: rawDetails['year'] ? String(rawDetails['year']).trim() : undefined,
+      set: rawDetails['set'] ? String(rawDetails['set']).trim() : undefined,
+      card_number: rawDetails['card_number'] ? String(rawDetails['card_number']).trim() : undefined,
+      grade:
+        (rawDetails['grade'] ? String(rawDetails['grade']).trim() : '') ||
+        this.form.controls.condition.value.trim() ||
+        undefined,
+      sport: rawDetails['sport'] ? String(rawDetails['sport']).trim() : undefined,
+    });
+
+    if (valuation) {
+      this.valuation.set(valuation);
+    } else {
+      this.estimateNotice.set(notice ?? 'No matching eBay listings found.');
+    }
+    this.estimating.set(false);
+  }
+
+  applyEstimateToPrice() {
+    const val = this.valuation();
+    if (val) {
+      this.form.controls.purchase_price.setValue(val.medianPrice);
+    }
   }
 
   // ---- photo handling ----
@@ -231,6 +296,7 @@ export class ItemForm {
     }
 
     this.clearPendingImage();
+    this.valuation.set(null);
     if (current) this.saved.emit();
     else this.form.reset({ type: v.type });
     this.saving.set(false);
@@ -241,11 +307,11 @@ export class ItemForm {
   }
 
   async discard() {
-  const current = this.item();
-  if (!current) return;
-  if (!confirm('Discard this draft and its photo?')) return;
+    const current = this.item();
+    if (!current) return;
+    if (!confirm('Discard this draft and its photo?')) return;
 
-  await this.store.remove(current.id);
-  if (!this.store.error()) this.saved.emit();
+    await this.store.remove(current.id);
+    if (!this.store.error()) this.saved.emit();
   }
 }

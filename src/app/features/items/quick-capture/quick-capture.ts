@@ -1,4 +1,4 @@
-import { Component, OnDestroy, computed, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, output, signal } from '@angular/core';
 import { resizeImage } from '../../../core/resize-image';
 import { ItemStore } from '../item-store';
 import { MEDIA_TYPES, MediaType } from '../item.model';
@@ -16,6 +16,7 @@ interface Shot {
   selector: 'app-quick-capture',
   templateUrl: './quick-capture.html',
   styleUrl: './quick-capture.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuickCapture implements OnDestroy {
   private store = inject(ItemStore);
@@ -47,18 +48,41 @@ export class QuickCapture implements OnDestroy {
     this.chain = this.chain.then(() => this.save(id, file, type));
   }
 
-    private async save(id: number, file: File, type: MediaType) {
+  private async save(id: number, file: File, type: MediaType) {
     try {
       const blob = await resizeImage(file);
       this.patch(id, { preview: URL.createObjectURL(blob), note: 'Reading photo…' });
 
       const { suggestion, notice } = await this.store.scanPhoto(type, blob);
+
+      let priceLabel = '';
+      if (type === 'card' && suggestion?.title) {
+        this.patch(id, { note: 'Checking eBay median…' });
+        const { valuation } = await this.store.estimateCardPrice({
+          title: suggestion.title,
+          year: suggestion.details['year'] as string | number | undefined,
+          set: suggestion.details['set'] as string | undefined,
+          card_number: suggestion.details['card_number'] as string | undefined,
+          grade: suggestion.details['grade'] as string | undefined,
+          sport: suggestion.details['sport'] as string | undefined,
+        });
+        if (valuation) {
+          suggestion.details = { ...suggestion.details, valuation };
+          priceLabel = ` · ~$${valuation.medianPrice.toFixed(2)}`;
+        }
+      }
+
       const ok = await this.store.addDraft(type, blob, suggestion);
 
       this.patch(
         id,
         ok
-          ? { status: 'saved', note: suggestion?.title ?? notice ?? 'No suggestions' }
+          ? {
+              status: 'saved',
+              note: suggestion?.title
+                ? `${suggestion.title}${priceLabel}`
+                : (notice ?? 'No suggestions'),
+            }
           : { status: 'failed', message: this.store.error() ?? 'Could not save.', note: undefined },
       );
     } catch {

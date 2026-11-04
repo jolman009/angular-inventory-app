@@ -7,6 +7,7 @@ import {
   MEDIA_TYPES,
   MediaType,
   NewItem,
+  getCardValuation,
 } from './item.model';
 
 export interface RowError {
@@ -139,11 +140,15 @@ export function itemsToCsv(items: Item[]): string {
     status: i.status,
     condition: i.condition ?? '',
     purchase_price: i.purchase_price ?? '',
+    estimated_price: getCardValuation(i.details)?.medianPrice ?? '',
     notes: i.notes ?? '',
     ...Object.fromEntries(DETAIL_KEYS.map(k => [k, i.details[k] ?? ''])),
   }));
   // escapeFormulae stops spreadsheets from treating text like "=1+1" as a formula
-  return unparse(rows, { columns: CSV_COLUMNS, escapeFormulae: true });
+  return unparse(rows, {
+    columns: ['type', 'title', 'status', 'condition', 'purchase_price', 'estimated_price', 'notes', ...DETAIL_KEYS],
+    escapeFormulae: true,
+  });
 }
 
 export function downloadCsv(filename: string, csv: string) {

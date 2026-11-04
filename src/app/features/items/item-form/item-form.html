@@ -1,20 +1,26 @@
 <form [formGroup]="form" (ngSubmit)="submit()" class="item-form">
   <h2>{{ isDraft() ? 'Add details' : (isEdit() ? 'Edit item' : 'Add an item') }}</h2>
   @if (isDraft()) {
-    <p class="muted">Suggestions come from your photo and can be wrong. Check each field before saving.</p>
+    <p class="muted">
+      Suggestions come from your photo and can be wrong. Check each field before saving.
+    </p>
   }
   <div class="row">
     <label>
       Type
       <select formControlName="type">
-        @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+        @for (t of types; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
       </select>
     </label>
 
     <label>
       Status
       <select formControlName="status">
-        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
       </select>
     </label>
   </div>
@@ -30,7 +36,7 @@
   <fieldset formGroupName="details" class="details">
     <legend>{{ currentType() }} details</legend>
     <div class="grid">
-            @for (f of detailFields(); track currentType() + ':' + f.key) {
+      @for (f of detailFields(); track currentType() + ':' + f.key) {
         <label>
           {{ f.label }}
           @if (f.kind === 'select') {
@@ -47,13 +53,63 @@
               [attr.inputmode]="f.kind === 'number' ? 'numeric' : null"
             />
           }
-          @if (detailsGroup.controls[f.key]?.touched && detailsGroup.controls[f.key]?.hasError('pattern')) {
+          @if (
+            detailsGroup.controls[f.key]?.touched &&
+            detailsGroup.controls[f.key]?.hasError('pattern')
+          ) {
             <small class="field-error">Numbers only.</small>
           }
         </label>
       }
     </div>
   </fieldset>
+
+  @if (currentType() === 'card') {
+    <section class="ebay-box" aria-label="eBay card price estimator">
+      <div class="ebay-header">
+        <div>
+          <strong>eBay Market Estimate</strong>
+          <p class="muted small">Median active Buy It Now price for this card</p>
+        </div>
+        <button
+          type="button"
+          class="btn-subtle"
+          [disabled]="estimating()"
+          (click)="checkEbayPrice()"
+        >
+          {{ estimating() ? 'Checking eBay…' : (valuation() ? 'Refresh estimate' : 'Check eBay price') }}
+        </button>
+      </div>
+
+      @if (estimateNotice()) {
+        <small class="muted">{{ estimateNotice() }}</small>
+      }
+
+      @if (valuation(); as val) {
+        <div class="ebay-result">
+          <div>
+            <span class="ebay-median">{{ val.medianPrice | currency }}</span>
+            <span class="muted small">
+              · Range {{ val.lowPrice | currency }}–{{ val.highPrice | currency }} ({{ val.sampleSize }} comps)
+            </span>
+          </div>
+          <div class="ebay-actions">
+            <button type="button" class="btn-subtle" (click)="applyEstimateToPrice()">
+              Copy to Price paid
+            </button>
+            <a
+              class="ebay-link"
+              [href]="val.ebaySearchUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View eBay comps ↗
+            </a>
+          </div>
+        </div>
+      }
+    </section>
+  }
 
   <div class="row">
     <label>
@@ -92,16 +148,18 @@
       }
     </div>
 
-    @if (imageError()) { <small class="field-error">{{ imageError() }}</small> }
+    @if (imageError()) {
+      <small class="field-error">{{ imageError() }}</small>
+    }
   </div>
 
   <div class="buttons">
-        <button type="submit" [disabled]="saving()">
+    <button type="submit" [disabled]="saving()">
       {{ saving() ? 'Saving…' : (isDraft() ? 'Save item' : (isEdit() ? 'Save changes' : 'Add item')) }}
     </button>
-        <button type="button" (click)="cancel()">{{ isEdit() ? 'Cancel' : 'Done' }}</button>
+    <button type="button" (click)="cancel()">{{ isEdit() ? 'Cancel' : 'Done' }}</button>
     @if (isDraft()) {
       <button type="button" class="danger" (click)="discard()">Discard draft</button>
     }
-      </div>
+  </div>
 </form>

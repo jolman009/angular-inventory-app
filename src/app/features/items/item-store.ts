@@ -2,7 +2,17 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { blobToBase64 } from '../../core/blob';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Supabase } from '../../core/supabase';
-import { Item, ItemStatus, MediaType, NewItem, ScanSuggestion, SortKey } from './item.model';
+import {
+  CardPriceQuery,
+  CardValuation,
+  Item,
+  ItemStatus,
+  MediaType,
+  NewItem,
+  ScanSuggestion,
+  SortKey,
+  getCardValuation,
+} from './item.model';
 
 const BUCKET = 'item-images';
 
@@ -24,6 +34,7 @@ export class ItemStore {
   readonly search = signal('');
   readonly selectedId = signal<string | null>(null);
   readonly sortBy = signal<SortKey>('newest');
+  readonly viewMode = signal<'grid' | 'list'>('grid');
 
   // Drafts are photos waiting for details. Everything else is the real collection.
   readonly committed = computed(() => this.items().filter(i => !i.draft));
@@ -54,6 +65,7 @@ export class ItemStore {
 
     const year = (i: Item) => (typeof i.details['year'] === 'number' ? (i.details['year'] as number) : null);
     const price = (i: Item) => i.purchase_price;
+    const estValue = (i: Item) => getCardValuation(i.details)?.medianPrice ?? i.purchase_price;
 
     // Numeric sort where items with no value always land at the bottom
     const byNumber =
@@ -77,6 +89,10 @@ export class ItemStore {
         return sorted.sort(byNumber(price, -1));
       case 'price_low':
         return sorted.sort(byNumber(price, 1));
+      case 'value_high':
+        return sorted.sort(byNumber(estValue, -1));
+      case 'value_low':
+        return sorted.sort(byNumber(estValue, 1));
       case 'year_new':
         return sorted.sort(byNumber(year, -1));
       case 'year_old':
@@ -96,9 +112,54 @@ export class ItemStore {
     return counts;
   });
 
+  readonly countsByType = computed(() => {
+    const counts: Partial<Record<MediaType, number>> = {};
+    for (const i of this.committed()) counts[i.type] = (counts[i.type] ?? 0) + 1;
+    return counts;
+  });
+
   readonly totalSpent = computed(() =>
     this.committed().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
   );
+
+  readonly totalEstimatedValue = computed(() =>
+    this.committed().reduce(
+      (sum, i) => sum + (getCardValuation(i.details)?.medianPrice ?? i.purchase_price ?? 0),
+      0,
+    ),
+  );
+
+  readonly valuedCardsCount = computed(
+    () => this.committed().filter(i => i.type === 'card' && getCardValuation(i.details) !== null).length,
+  );
+
+  readonly unvaluedCards = computed(() =>
+    this.committed().filter(i => i.type === 'card' && getCardValuation(i.details) === null),
+  );
+
+  readonly pricingProgress = signal<{ current: number; total: number } | null>(null);
+
+  readonly pricedCount = computed(
+    () => this.committed().filter(i => (i.purchase_price ?? 0) > 0).length,
+  );
+
+  readonly averageSpent = computed(() => {
+    const count = this.pricedCount();
+    return count > 0 ? this.totalSpent() / count : 0;
+  });
+
+  readonly activeFilterCount = computed(
+    () =>
+      (this.typeFilter() !== 'all' ? 1 : 0) +
+      (this.statusFilter() !== 'all' ? 1 : 0) +
+      (this.search().trim() ? 1 : 0),
+  );
+
+  resetFilters() {
+    this.typeFilter.set('all');
+    this.statusFilter.set('all');
+    this.search.set('');
+  }
 
   // ---- item actions ----
   async load() {
@@ -185,6 +246,81 @@ export class ItemStore {
       console.warn('Scan failed', e);
       return { suggestion: null, notice: 'Suggestions are unavailable right now.' };
     }
+  }
+
+  /** Queries the ebay-price edge function for a card's median Browse API value. */
+  async estimateCardPrice(
+    query: CardPriceQuery,
+  ): Promise<{ valuation: CardValuation | null; notice: string | null }> {
+    try {
+      const { data, error } = await this.db.functions.invoke('ebay-price', {
+        body: query,
+      });
+
+      if (error) {
+        let notice = 'eBay price estimate is unavailable right now.';
+        if (error instanceof FunctionsHttpError) {
+          try {
+            notice = (await error.context.json()).error ?? notice;
+          } catch {
+            // keep default notice
+          }
+        }
+        return { valuation: null, notice };
+      }
+
+      const res = data as { valuation?: CardValuation | null; notice?: string | null };
+      return {
+        valuation: res?.valuation ?? null,
+        notice: res?.notice ?? (res?.valuation ? null : 'No matching eBay listings found.'),
+      };
+    } catch (e) {
+      console.warn('eBay price estimate failed', e);
+      return { valuation: null, notice: 'eBay price estimate is unavailable right now.' };
+    }
+  }
+
+  /** Fetches and persists the eBay median valuation for a saved card item. */
+  async refreshCardEstimate(
+    item: Item,
+  ): Promise<{ valuation: CardValuation | null; notice: string | null }> {
+    const query: CardPriceQuery = {
+      title: item.title,
+      year: item.details['year'] as string | number | undefined,
+      set: item.details['set'] as string | undefined,
+      card_number: item.details['card_number'] as string | undefined,
+      grade: (item.details['grade'] as string | undefined) || item.condition,
+      sport: item.details['sport'] as string | undefined,
+    };
+
+    const { valuation, notice } = await this.estimateCardPrice(query);
+    if (valuation) {
+      await this.update(item.id, {
+        details: { ...item.details, valuation },
+      });
+    }
+    return { valuation, notice };
+  }
+
+  /** Batch-updates eBay price estimates for existing cards in the collection. */
+  async refreshAllCardEstimates(onlyMissing = true): Promise<{ updated: number; total: number }> {
+    const targets = onlyMissing
+      ? this.unvaluedCards()
+      : this.committed().filter(i => i.type === 'card');
+
+    if (!targets.length) return { updated: 0, total: 0 };
+
+    let updated = 0;
+    this.pricingProgress.set({ current: 0, total: targets.length });
+
+    for (let i = 0; i < targets.length; i++) {
+      this.pricingProgress.set({ current: i + 1, total: targets.length });
+      const { valuation } = await this.refreshCardEstimate(targets[i]);
+      if (valuation) updated++;
+    }
+
+    this.pricingProgress.set(null);
+    return { updated, total: targets.length };
   }
 
   /** Saves many items at once, in chunks of 100. Returns how many were saved. */

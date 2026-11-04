@@ -1,131 +1,448 @@
-<main class="page">
-  <header class="top">
-    <div>
-      <h1>My Collection</h1>
-      <p class="muted">{{ supabase.session()?.user?.email }}</p>
+<div class="dashboard" [class.has-drawer]="drawerOpen()">
+  <aside class="sidebar" aria-label="Collection navigation">
+    <div class="sidebar-brand">
+      <a class="brand" routerLink="/collection">
+        <img ngSrc="logo.svg" alt="" width="32" height="32" priority />
+        <span>{{ brand.name }}</span>
+      </a>
     </div>
-    <button type="button" (click)="signOut()">Sign out</button>
-  </header>
 
-  <section class="stats" aria-label="Collection summary">
-    <span class="chip">{{ store.committed().length }} items</span>
-    <span class="chip">{{ store.totalSpent() | currency }} spent</span>
-    @for (s of statuses; track s) {
-      @if (store.countsByStatus()[s]) {
-        <span class="chip">{{ s }}: {{ store.countsByStatus()[s] }}</span>
+    <nav class="facet-group" aria-label="Media categories">
+      <span class="facet-heading">Categories</span>
+      <button
+        type="button"
+        class="facet-btn"
+        [class.active]="store.typeFilter() === 'all'"
+        (click)="store.typeFilter.set('all')"
+      >
+        <span>All items</span>
+        <span class="facet-count">{{ store.committed().length }}</span>
+      </button>
+      @for (t of types; track t) {
+        <button
+          type="button"
+          class="facet-btn"
+          [class.active]="store.typeFilter() === t"
+          (click)="store.typeFilter.set(t)"
+        >
+          <span>{{ typeLabels[t] }}</span>
+          <span class="facet-count">{{ store.countsByType()[t] ?? 0 }}</span>
+        </button>
       }
-    }
-  </section>
+    </nav>
 
-  @if (store.drafts().length && !formOpen() && !captureOpen()) {
-    <div class="drafts-banner" role="status">
-      <span>
-        <strong>{{ store.drafts().length }}</strong>
-        {{ store.drafts().length === 1 ? 'photo needs' : 'photos need' }} details.
-      </span>
-      <button type="button" class="btn-primary" (click)="startReview()">Review drafts</button>
+    <nav class="facet-group" aria-label="Item status filters">
+      <span class="facet-heading">Status</span>
+      <button
+        type="button"
+        class="facet-btn"
+        [class.active]="store.statusFilter() === 'all'"
+        (click)="store.statusFilter.set('all')"
+      >
+        <span>All statuses</span>
+        <span class="facet-count">{{ store.committed().length }}</span>
+      </button>
+      @for (s of statuses; track s) {
+        <button
+          type="button"
+          class="facet-btn"
+          [attr.data-status]="s"
+          [class.active]="store.statusFilter() === s"
+          (click)="store.statusFilter.set(s)"
+        >
+          <span class="facet-label">
+            <span class="c-dot" [style.--dot-color]="'var(--st-' + s + ')'"></span>
+            {{ statusLabels[s] }}
+          </span>
+          <span class="facet-count">{{ store.countsByStatus()[s] ?? 0 }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="user-email muted" [title]="supabase.session()?.user?.email ?? ''">
+        {{ supabase.session()?.user?.email }}
+      </p>
+      <button type="button" class="signout-btn" (click)="signOut()">Sign out</button>
     </div>
-  }
+  </aside>
 
-  @if (formOpen()) {
-    <app-item-form [item]="editingItem()" (done)="closeForm()" (saved)="onSaved()" />  }
-
-    @if (importOpen()) {
-    <app-csv-import (done)="importOpen.set(false)" />
-  }
-
-  @if (captureOpen()) {
-    <app-quick-capture (done)="captureOpen.set(false)" (review)="startReview()" />
-  }
-
-  @if (store.error()) {
-    <p class="error" role="alert">{{ store.error() }}</p>
-  }
-
-  <div class="toolbar">
-    <section class="filters">
-      <input
-        type="search"
-        placeholder="Search…"
-        aria-label="Search collection"
-        [value]="store.search()"
-        (input)="onSearch($event)"
-      />
-
-      <select aria-label="Filter by type" (change)="onTypeFilter($event)">
-        <option value="all" [selected]="store.typeFilter() === 'all'">All types</option>
-        @for (t of types; track t) {
-          <option [value]="t" [selected]="store.typeFilter() === t">{{ t }}</option>
-        }
-      </select>
-
-      <select aria-label="Filter by status" (change)="onStatusFilter($event)">
-        <option value="all" [selected]="store.statusFilter() === 'all'">All statuses</option>
-        @for (s of statuses; track s) {
-          <option [value]="s" [selected]="store.statusFilter() === s">{{ s }}</option>
-        }
-      </select>
-
-            <select aria-label="Sort by" (change)="onSort($event)">
-        @for (o of sortOptions; track o.value) {
-          <option [value]="o.value" [selected]="store.sortBy() === o.value">{{ o.label }}</option>
-        }
-      </select>
-    </section>
+  <main class="page">
+    <header class="top">
+      <div>
+        <h1>My Collection</h1>
+        <p class="muted">
+          Showing {{ store.filtered().length }} of {{ store.committed().length }} cataloged items
+        </p>
+      </div>
 
       <div class="toolbar-actions">
-      @if (!formOpen()) {
-        <button type="button" class="btn-primary" (click)="adding.set(true)">+ Add item</button>
-      }
-      <button type="button" (click)="captureOpen.set(true)">Quick capture</button>
-      <button type="button" (click)="importOpen.set(true)">Import</button>
-      <button type="button" (click)="exportCsv()" [disabled]="!store.committed().length">Export</button>
-    </div>
-  </div>
+        @if (!formOpen()) {
+          <button type="button" class="btn-primary" (click)="openAdd()">+ Add item</button>
+        }
+        <button type="button" (click)="openCapture()">Quick capture</button>
+        @if (store.pricingProgress(); as prog) {
+          <button type="button" disabled>
+            Pricing {{ prog.current }}/{{ prog.total }} cards…
+          </button>
+        } @else if (store.unvaluedCards().length > 0) {
+          <button type="button" (click)="refreshMissingCards()">
+            Price {{ store.unvaluedCards().length }}
+            {{ store.unvaluedCards().length === 1 ? 'card' : 'cards' }} (eBay)
+          </button>
+        }
+        <button type="button" (click)="openImport()">Import</button>
+        <button type="button" (click)="exportCsv()" [disabled]="!store.committed().length">
+          Export
+        </button>
+      </div>
+    </header>
 
-  @if (store.loading()) {
-    <p class="muted">Loading…</p>
-  } @else {
-    <ul class="items">
-      @for (item of store.filtered(); track item.id) {
-        <li
-          [attr.data-status]="item.status"
-          [class.selected]="store.selectedId() === item.id"
-          (click)="store.selectedId.set(item.id)"
-        >
-          <div class="main">
-            @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
-              <img [src]="url" [alt]="item.title" class="thumb" />
+    <section class="stats c-widget-grid" aria-label="Collection summary">
+      <article class="c-stat-card" style="--stat-accent: var(--primary)">
+        <div class="c-stat-label">
+          <span>Total Items</span>
+          <span class="c-badge">{{ types.length }} types</span>
+        </div>
+        <div class="c-stat-value">{{ store.committed().length }} items</div>
+        <div class="c-progress" aria-hidden="true">
+          @for (t of types; track t) {
+            <div
+              class="c-progress-segment"
+              [style.width.%]="typePercent(t)"
+              [style.background]="'var(--mt-' + t + ')'"
+            ></div>
+          }
+        </div>
+        <p class="c-stat-meta">
+          @for (t of types; track t; let last = $last) {
+            {{ store.countsByType()[t] ?? 0 }} {{ typeLabels[t] }}{{ !last ? ' · ' : '' }}
+          }
+        </p>
+      </article>
+
+      <article class="c-stat-card" style="--stat-accent: var(--st-owned)">
+        <div class="c-stat-label">
+          <span>Est. Portfolio Value</span>
+          <span class="c-badge">{{ store.valuedCardsCount() }} eBay valued</span>
+        </div>
+        <div class="c-stat-value">{{ store.totalEstimatedValue() | currency }}</div>
+        <p class="c-stat-meta">
+          Paid {{ store.totalSpent() | currency }} · Avg {{ store.averageSpent() | currency }}
+        </p>
+      </article>
+
+      <article class="c-stat-card" style="--stat-accent: var(--st-wishlist)">
+        <div class="c-stat-label">
+          <span>By Status</span>
+          <span class="c-badge">{{ store.countsByStatus()['owned'] ?? 0 }} owned</span>
+        </div>
+        <div class="c-progress" aria-hidden="true">
+          @for (s of statuses; track s) {
+            <div
+              class="c-progress-segment"
+              [style.width.%]="statusPercent(s)"
+              [style.background]="'var(--st-' + s + ')'"
+            ></div>
+          }
+        </div>
+        <div class="stat-chips">
+          @for (s of statuses; track s) {
+            @if (store.countsByStatus()[s]) {
+              <span class="chip">{{ statusLabels[s] }}: {{ store.countsByStatus()[s] }}</span>
             }
-            <div>
-              <strong>{{ item.title }}</strong>
-              <span class="muted"> · {{ item.type }}</span>
-              @if (item.condition) { <span class="muted"> · {{ item.condition }}</span> }
-              @if (detailSummary(item)) {
-                <div class="muted small">{{ detailSummary(item) }}</div>
-              }
-            </div>
-          </div>
+          }
+        </div>
+      </article>
 
-          <div class="actions">
-            <select
-              [attr.aria-label]="'Status for ' + item.title"
-              (change)="onStatusChange(item.id, $event)"
-              (click)="$event.stopPropagation()"
-            >
-              @for (s of statuses; track s) {
-                <option [value]="s" [selected]="s === item.status">{{ s }}</option>
+      <article class="c-stat-card" style="--stat-accent: var(--st-lent)">
+        <div class="c-stat-label">
+          <span>AI Photo Queue</span>
+          <span class="c-badge">Gemini + eBay</span>
+        </div>
+        <div class="c-stat-value">
+          {{ store.drafts().length }} {{ store.drafts().length === 1 ? 'draft' : 'drafts' }}
+        </div>
+        <p class="c-stat-meta">
+          @if (store.drafts().length) {
+            Photos ready for detail &amp; price review
+          } @else {
+            Auto-scans card details &amp; eBay median
+          }
+        </p>
+      </article>
+    </section>
+
+    @if (store.drafts().length && !formOpen() && !captureOpen()) {
+      <div class="drafts-banner" role="status">
+        <span>
+          <strong>{{ store.drafts().length }}</strong>
+          {{ store.drafts().length === 1 ? 'photo needs' : 'photos need' }} details.
+        </span>
+        <button type="button" class="btn-primary" (click)="startReview()">Review drafts</button>
+      </div>
+    }
+
+    @if (store.error()) {
+      <p class="error" role="alert">{{ store.error() }}</p>
+    }
+
+    <div class="toolbar">
+      <section class="filters" aria-label="Filter and sort controls">
+        <input
+          type="search"
+          placeholder="Search title, year, author, set…"
+          aria-label="Search collection"
+          [value]="store.search()"
+          (input)="onSearch($event)"
+        />
+
+        <select aria-label="Filter by type" (change)="onTypeFilter($event)">
+          <option value="all" [selected]="store.typeFilter() === 'all'">All types</option>
+          @for (t of types; track t) {
+            <option [value]="t" [selected]="store.typeFilter() === t">{{ typeLabels[t] }}</option>
+          }
+        </select>
+
+        <select aria-label="Filter by status" (change)="onStatusFilter($event)">
+          <option value="all" [selected]="store.statusFilter() === 'all'">All statuses</option>
+          @for (s of statuses; track s) {
+            <option [value]="s" [selected]="store.statusFilter() === s">
+              {{ statusLabels[s] }}
+            </option>
+          }
+        </select>
+
+        <select aria-label="Sort by" (change)="onSort($event)">
+          @for (o of sortOptions; track o.value) {
+            <option [value]="o.value" [selected]="store.sortBy() === o.value">{{ o.label }}</option>
+          }
+        </select>
+
+        @if (store.activeFilterCount() > 0) {
+          <button type="button" class="btn-subtle" (click)="store.resetFilters()">
+            Reset ({{ store.activeFilterCount() }})
+          </button>
+        }
+      </section>
+
+      <div class="view-toggle" role="group" aria-label="Collection view layout">
+        <button
+          type="button"
+          [class.active]="store.viewMode() === 'grid'"
+          [attr.aria-pressed]="store.viewMode() === 'grid'"
+          (click)="store.viewMode.set('grid')"
+        >
+          Grid
+        </button>
+        <button
+          type="button"
+          [class.active]="store.viewMode() === 'list'"
+          [attr.aria-pressed]="store.viewMode() === 'list'"
+          (click)="store.viewMode.set('list')"
+        >
+          List
+        </button>
+      </div>
+    </div>
+
+    @if (store.loading()) {
+      <p class="muted">Loading…</p>
+    } @else {
+      <ul class="items" [class.grid-view]="store.viewMode() === 'grid'">
+        @for (item of store.filtered(); track item.id) {
+          <li
+            [attr.data-status]="item.status"
+            [class.selected]="store.selectedId() === item.id"
+            (click)="store.selectedId.set(item.id)"
+          >
+            <div class="main">
+              @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
+                <img [src]="url" [alt]="item.title" class="thumb" />
+              } @else {
+                <div class="thumb-placeholder" aria-hidden="true">{{ item.type }}</div>
               }
-            </select>
-            <button type="button" (click)="startEdit(item.id); $event.stopPropagation()">Edit</button>
-            <button type="button" class="danger" (click)="onDelete(item); $event.stopPropagation()">
-              Delete
-            </button>
+              <div class="item-info">
+                <div class="item-badges">
+                  <span class="c-badge">{{ item.type }}</span>
+                  <div class="price-group">
+                    @if (cardValuation(item); as val) {
+                      <span class="est-badge" title="eBay Median Estimate">
+                        Est. {{ val.medianPrice | currency }}
+                      </span>
+                    }
+                    @if (item.purchase_price !== null) {
+                      <span class="price-tag">{{ item.purchase_price | currency }}</span>
+                    }
+                  </div>
+                </div>
+                <strong class="item-title">{{ item.title }}</strong>
+                @if (item.condition) {
+                  <span class="muted small">Condition: {{ item.condition }}</span>
+                }
+                @if (detailSummary(item)) {
+                  <div class="muted small">{{ detailSummary(item) }}</div>
+                }
+              </div>
+            </div>
+
+            <div class="actions">
+              <select
+                [attr.aria-label]="'Status for ' + item.title"
+                (change)="onStatusChange(item.id, $event)"
+                (click)="$event.stopPropagation()"
+              >
+                @for (s of statuses; track s) {
+                  <option [value]="s" [selected]="s === item.status">{{ statusLabels[s] }}</option>
+                }
+              </select>
+              <button type="button" (click)="startEdit(item.id); $event.stopPropagation()">
+                Edit
+              </button>
+              <button
+                type="button"
+                class="danger"
+                (click)="onDelete(item); $event.stopPropagation()"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="empty">Nothing matches yet. Tap “+ Add item” to start your collection.</li>
+        }
+      </ul>
+    }
+  </main>
+
+  @if (drawerOpen()) {
+    <aside class="drawer" aria-label="Item workspace panel">
+      <div class="drawer-header">
+        <strong>
+          @if (formOpen()) {
+            {{ editingItem() ? 'Edit Catalog Item' : 'New Catalog Item' }}
+          } @else if (captureOpen()) {
+            AI Quick Capture
+          } @else if (importOpen()) {
+            CSV Batch Import
+          } @else {
+            Item Inspector
+          }
+        </strong>
+        <button type="button" class="btn-subtle" (click)="closeDrawer()">Close</button>
+      </div>
+
+      @if (formOpen()) {
+        <app-item-form [item]="editingItem()" (done)="closeForm()" (saved)="onSaved()" />
+      } @else if (importOpen()) {
+        <app-csv-import (done)="importOpen.set(false)" />
+      } @else if (captureOpen()) {
+        <app-quick-capture (done)="captureOpen.set(false)" (review)="startReview()" />
+      } @else if (inspectingItem(); as selected) {
+        <div class="inspector">
+          @if (selected.image_path && store.imageUrls()[selected.image_path]; as url) {
+            <img [src]="url" [alt]="selected.title" class="inspector-photo" />
+          }
+          <div class="inspector-badges">
+            <span class="c-badge">{{ typeLabels[selected.type] }}</span>
+            <span class="c-badge">{{ statusLabels[selected.status] }}</span>
           </div>
-        </li>
-      } @empty {
-        <li class="empty">Nothing matches yet. Tap “+ Add item” to start your collection.</li>
+          <h2>{{ selected.title }}</h2>
+          @if (selected.purchase_price !== null) {
+            <p class="inspector-price">Paid: {{ selected.purchase_price | currency }}</p>
+          }
+
+          @if (selected.type === 'card') {
+            <section class="ebay-box" aria-label="eBay card valuation">
+              <div class="ebay-header">
+                <strong>eBay Market Estimate</strong>
+                <button
+                  type="button"
+                  class="btn-subtle"
+                  [disabled]="refreshingCardId() === selected.id"
+                  (click)="refreshSingleCard(selected)"
+                >
+                  {{
+                    refreshingCardId() === selected.id
+                      ? 'Checking…'
+                      : cardValuation(selected)
+                        ? 'Refresh'
+                        : 'Get estimate'
+                  }}
+                </button>
+              </div>
+
+              @if (refreshNotice()) {
+                <small class="muted">{{ refreshNotice() }}</small>
+              }
+
+              @if (cardValuation(selected); as val) {
+                <div class="ebay-result">
+                  <div>
+                    <span class="ebay-median">{{ val.medianPrice | currency }}</span>
+                    <span class="muted small"> median ({{ val.sampleSize }} comps)</span>
+                  </div>
+                  <div class="muted small">
+                    Typical range: {{ val.lowPrice | currency }} – {{ val.highPrice | currency }}
+                  </div>
+                  @if (gainLoss(selected); as gl) {
+                    <div
+                      class="gain-badge"
+                      [class.gain-pos]="gl.diff >= 0"
+                      [class.gain-neg]="gl.diff < 0"
+                    >
+                      {{ gl.diff >= 0 ? '+' : '' }}{{ gl.diff | currency }} ({{
+                        gl.percent | number: '1.0-1'
+                      }}%) vs. price paid
+                    </div>
+                  }
+                  <a
+                    class="ebay-link"
+                    [href]="val.ebaySearchUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View active eBay comps ↗
+                  </a>
+                </div>
+              } @else {
+                <p class="muted small">
+                  No eBay estimate saved yet. Click "Get estimate" to calculate median value.
+                </p>
+              }
+            </section>
+          }
+
+          <dl class="inspector-dl">
+            @if (selected.condition) {
+              <div>
+                <dt>Condition</dt>
+                <dd>{{ selected.condition }}</dd>
+              </div>
+            }
+            @for (entry of detailEntries(selected); track entry.label) {
+              <div>
+                <dt>{{ entry.label }}</dt>
+                <dd>{{ entry.value }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (selected.notes) {
+            <div class="inspector-notes">
+              <span class="facet-heading">Collector Notes</span>
+              <p>{{ selected.notes }}</p>
+            </div>
+          }
+
+          <div class="inspector-actions">
+            <button type="button" class="btn-primary" (click)="startEdit(selected.id)">
+              Edit item
+            </button>
+            <button type="button" class="danger" (click)="onDelete(selected)">Delete</button>
+          </div>
+        </div>
       }
-    </ul>
+    </aside>
   }
-</main>
+</div>
