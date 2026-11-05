@@ -91,7 +91,12 @@
       <p class="user-email muted" [title]="supabase.session()?.user?.email ?? ''">
         {{ supabase.session()?.user?.email }}
       </p>
-      <button type="button" class="signout-btn" (click)="signOut()">Sign out</button>
+      <div class="account-actions">
+        <button type="button" class="signout-btn" (click)="signOut()">Sign out</button>
+        <button type="button" class="signout-btn danger" (click)="deleteAccount()">
+          Delete account &amp; data
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -622,8 +627,11 @@
         </button>
       }
 
-      <button type="button" class="popup-item danger" role="menuitem" (click)="signOut()">
+      <button type="button" class="popup-item" role="menuitem" (click)="signOut()">
         Sign out
+      </button>
+      <button type="button" class="popup-item danger" role="menuitem" (click)="deleteAccount()">
+        Delete account &amp; data
       </button>
     </div>
   }

@@ -1,0 +1,220 @@
+<div class="page">
+  <header class="nav">
+    <a class="brand" routerLink="/">
+      <img ngSrc="logo.svg" alt="" width="36" height="36" priority />
+      <span>{{ brand.name }}</span>
+    </a>
+    <div class="nav-actions">
+      @if (supabase.session()) {
+        <a class="cta cta-sm" routerLink="/collection">My collection</a>
+      } @else {
+        <a class="signin-link" routerLink="/login">Sign in</a>
+        <a class="cta cta-sm" routerLink="/login" [queryParams]="{ mode: 'signup' }">Get started</a>
+      }
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-header" aria-labelledby="privacy-title">
+      <span class="eyebrow">
+        <span class="c-dot"></span>
+        Legal &amp; Data Transparency
+      </span>
+      <h1 id="privacy-title">Privacy Policy</h1>
+      <p class="lead">
+        Your collection belongs to you. This policy explains what data {{ brand.name }} collects,
+        how it is stored and protected, and how you can export or permanently delete your account
+        and all stored data at any time.
+      </p>
+      <p class="meta muted">Effective date: {{ effectiveDate }}</p>
+    </section>
+
+    <section class="highlights" aria-label="Privacy highlights">
+      <div class="bento-grid">
+        <article class="bento-card">
+          <span class="c-badge">Private by Default</span>
+          <h2>Row-level isolation</h2>
+          <p class="muted">
+            Your catalog items and photos are isolated to your account using database row-level
+            security and temporary signed image URLs.
+          </p>
+        </article>
+
+        <article class="bento-card">
+          <span class="c-badge">No Data Selling</span>
+          <h2>Zero ad tracking</h2>
+          <p class="muted">
+            We never sell, rent, or share your personal information or collection inventory with
+            advertisers or data brokers.
+          </p>
+        </article>
+
+        <article class="bento-card">
+          <span class="c-badge">Full Control</span>
+          <h2>Instant data deletion</h2>
+          <p class="muted">
+            Export your catalog to CSV or permanently delete your account, collection records, and
+            uploaded photos whenever you choose.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <div class="legal-content">
+      <section class="legal-section" aria-labelledby="info-collected">
+        <h2 id="info-collected">1. Information We Collect and Store</h2>
+        <p>
+          {{ brand.name }} collects only the minimum information required to authenticate your
+          account and maintain your personal collection catalog:
+        </p>
+        <ul>
+          <li>
+            <strong>Account Credentials:</strong> When you register or sign in, we collect your
+            email address and an encrypted password hash managed by Supabase Authentication.
+          </li>
+          <li>
+            <strong>Collection Catalog Data:</strong> We store the items you add or import into your
+            vault, including titles, media categories (cards, books, games, vinyl records),
+            ownership status (owned, wishlist, for sale, sold, lent out), condition, purchase
+            prices, collector notes, category-specific fields (such as year, set, grade, ISBN,
+            publisher, or format), and saved eBay market valuation snapshots.
+          </li>
+          <li>
+            <strong>Uploaded Photos:</strong> When you attach a photo to an item or use AI Quick
+            Capture, the image is resized in your browser and stored in a private cloud storage
+            bucket (<code>item-images</code>) scoped to your unique user ID.
+          </li>
+          <li>
+            <strong>Local Device Preferences:</strong> We store your authentication session token
+            and display theme preference (<code>vaulted-theme</code>: system, light, or dark) in
+            your browser's local storage.
+          </li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="how-we-use">
+        <h2 id="how-we-use">2. How We Use Your Information &amp; Third-Party Processors</h2>
+        <p>We use your stored information strictly to operate and improve {{ brand.name }}:</p>
+        <ul>
+          <li>
+            <strong>Cloud Database &amp; Storage (Supabase):</strong> Your account credentials,
+            collection records, and uploaded photos are hosted on Supabase infrastructure protected
+            by PostgreSQL Row-Level Security (RLS), ensuring only your authenticated session can
+            access your records.
+          </li>
+          <li>
+            <strong>AI Quick Capture (Google Gemini Vision):</strong> When you scan an item photo
+            for automatic field suggestions, the image is transmitted securely to our
+            <code>scan-item</code> edge function and processed by the Google Gemini Vision API to
+            extract visible text and metadata. Images sent for scanning are used solely to return
+            suggestions to you.
+          </li>
+          <li>
+            <strong>Card Market Valuations (eBay Browse API):</strong> When you request a card price
+            estimate, non-personal card attributes (player/title, year, set, card number, grade, and
+            sport) are sent to our <code>ebay-price</code> edge function to calculate median listing
+            prices from eBay. Your email address and account identity are never shared with eBay.
+          </li>
+        </ul>
+      </section>
+
+      <section class="legal-section deletion-callout" id="account-deletion" aria-labelledby="deletion-heading">
+        <div class="callout-header">
+          <span class="c-badge">Account &amp; Data Erasure</span>
+          <h2 id="deletion-heading">3. How to Delete Your Account and Stored Data</h2>
+        </div>
+        <p>
+          You have complete control over your data and may delete individual items or permanently
+          delete your entire {{ brand.name }} account and all associated stored data at any time.
+        </p>
+
+        <h3>Option A: Self-Service Account &amp; Data Deletion in the App</h3>
+        <ol>
+          <li>
+            Sign in to your {{ brand.name }} account and navigate to
+            <a routerLink="/collection">My Collection</a>.
+          </li>
+          <li>
+            Optional: Click <strong>Export</strong> in the collection toolbar (or inside the mobile
+            <strong>Import/Export</strong> menu) to download a complete CSV backup of your catalog
+            before deleting your account.
+          </li>
+          <li>
+            On desktop, locate the bottom of the left navigation sidebar and click
+            <strong>Delete account &amp; data</strong>. On mobile or tablet, tap
+            <strong>Profile</strong> in the bottom navigation bar and tap
+            <strong>Delete account &amp; data</strong>.
+          </li>
+          <li>
+            Confirm the deletion prompt. {{ brand.name }} will immediately delete all of your
+            cataloged items and photo drafts from the database, purge all of your uploaded photos
+            from the <code>item-images</code> storage bucket, clear your local browser preferences,
+            and sign you out.
+          </li>
+        </ol>
+
+        <h3>Option B: Deleting Individual Items or Photos</h3>
+        <p>
+          To remove specific records without closing your account, click <strong>Delete</strong> on
+          any item in your collection list or inside the <strong>Item Inspector</strong> drawer.
+          Deleting an item immediately deletes both its database record and its associated photo
+          file from cloud storage.
+        </p>
+
+        <h3>Option C: Requesting Account &amp; Data Deletion via Email</h3>
+        <p>
+          If you are unable to sign in to your account or wish to request complete removal of your
+          authentication record and all stored data through support, send an email from your
+          registered email address to
+          <a [href]="'mailto:' + brand.supportEmail + '?subject=Delete%20My%20Vaulted%20Account'">
+            {{ brand.supportEmail }}
+          </a>
+          with the subject line <strong>"Delete My {{ brand.name }} Account"</strong>. We will
+          permanently erase your authentication profile, database records, and stored images within
+          <strong>7 business days</strong> (and never later than 30 days) and send you a final
+          confirmation once erasure is complete.
+        </p>
+
+        <div class="deletion-summary">
+          <strong>What is permanently removed when you delete your account:</strong>
+          <ul>
+            <li>All cataloged items, drafts, notes, purchase prices, and eBay valuation data</li>
+            <li>All item photos uploaded to the private <code>item-images</code> storage bucket</li>
+            <li>Your local theme and session data stored in your browser</li>
+            <li>Your account login credentials and authentication profile</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="legal-section" aria-labelledby="data-retention">
+        <h2 id="data-retention">4. Data Retention &amp; Portability</h2>
+        <p>
+          We retain your collection data only for as long as your account remains active. You can
+          export your entire collection to a standard CSV file at any time using the in-app
+          <strong>Export</strong> feature. Once you delete an item or delete your account, the data
+          cannot be recovered.
+        </p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="contact-privacy">
+        <h2 id="contact-privacy">5. Contact Us</h2>
+        <p>
+          If you have questions about this Privacy Policy, your stored data, or account deletion,
+          please contact us at
+          <a [href]="'mailto:' + brand.supportEmail">{{ brand.supportEmail }}</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span>© {{ year }} {{ brand.name }} · {{ brand.tagline }}</span>
+    <nav class="foot-links" aria-label="Legal">
+      <a routerLink="/">Home</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/privacy" aria-current="page">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/terms">Terms &amp; Conditions</a>
+    </nav>
+  </footer>
+</div>

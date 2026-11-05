@@ -146,5 +146,12 @@
     </section>
   </main>
 
-  <footer class="foot">© {{ year }} {{ brand.name }} · {{ brand.tagline }}</footer>
+  <footer class="foot">
+    <span>© {{ year }} {{ brand.name }} · {{ brand.tagline }}</span>
+    <nav class="foot-links" aria-label="Legal">
+      <a routerLink="/privacy">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/terms">Terms &amp; Conditions</a>
+    </nav>
+  </footer>
 </div>

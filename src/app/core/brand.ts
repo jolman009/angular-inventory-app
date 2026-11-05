@@ -6,4 +6,5 @@ export const BRAND = {
   taglineLead: lead,
   taglineTail: tail,
   tagline: `${lead} ${tail}`,
+  supportEmail: 'privacy@vaulted.app',
 } as const;

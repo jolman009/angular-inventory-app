@@ -28,4 +28,12 @@ describe('Landing', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.card .head')?.textContent).toContain('Abbey Road');
   });
+
+  it('should link to Privacy Policy and Terms & Conditions in the footer', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const footerLinks = Array.from(compiled.querySelectorAll('footer a'));
+    const hrefs = footerLinks.map(a => a.getAttribute('href'));
+    expect(hrefs).toContain('/privacy');
+    expect(hrefs).toContain('/terms');
+  });
 });

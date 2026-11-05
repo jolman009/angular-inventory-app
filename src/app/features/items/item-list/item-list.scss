@@ -26,6 +26,12 @@
   white-space: nowrap;
 }
 
+.account-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
 .signout-btn {
   width: 100%;
 }

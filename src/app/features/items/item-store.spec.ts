@@ -87,4 +87,13 @@ describe('ItemStore', () => {
     expect(service.activeFilterCount()).toBe(0);
     expect(service.typeFilter()).toBe('all');
   });
+
+  it('should clear local collection state when deleteAccountAndData succeeds on empty store', async () => {
+    service.items.set([]);
+    service.selectedId.set('1');
+    const result = await service.deleteAccountAndData();
+    expect(result).toBe(true);
+    expect(service.items()).toEqual([]);
+    expect(service.selectedId()).toBeNull();
+  });
 });

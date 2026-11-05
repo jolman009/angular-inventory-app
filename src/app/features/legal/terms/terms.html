@@ -1,0 +1,186 @@
+<div class="page">
+  <header class="nav">
+    <a class="brand" routerLink="/">
+      <img ngSrc="logo.svg" alt="" width="36" height="36" priority />
+      <span>{{ brand.name }}</span>
+    </a>
+    <div class="nav-actions">
+      @if (supabase.session()) {
+        <a class="cta cta-sm" routerLink="/collection">My collection</a>
+      } @else {
+        <a class="signin-link" routerLink="/login">Sign in</a>
+        <a class="cta cta-sm" routerLink="/login" [queryParams]="{ mode: 'signup' }">Get started</a>
+      }
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-header" aria-labelledby="terms-title">
+      <span class="eyebrow">
+        <span class="c-dot"></span>
+        Service Agreement
+      </span>
+      <h1 id="terms-title">Terms &amp; Conditions</h1>
+      <p class="lead">
+        These Terms &amp; Conditions govern your access to and use of {{ brand.name }}. By creating
+        an account or using the catalog, you agree to these terms.
+      </p>
+      <p class="meta muted">Effective date: {{ effectiveDate }}</p>
+    </section>
+
+    <section class="highlights" aria-label="Terms highlights">
+      <div class="bento-grid">
+        <article class="bento-card">
+          <span class="c-badge">Your Content</span>
+          <h2>You own your catalog</h2>
+          <p class="muted">
+            You retain full ownership of all collection records, notes, spreadsheets, and item
+            photos you store in {{ brand.name }}.
+          </p>
+        </article>
+
+        <article class="bento-card">
+          <span class="c-badge">Market Estimates</span>
+          <h2>Informational valuations</h2>
+          <p class="muted">
+            AI field suggestions and eBay median price estimates are provided for collector
+            reference and are not formal appraisals.
+          </p>
+        </article>
+
+        <article class="bento-card">
+          <span class="c-badge">Leave Anytime</span>
+          <h2>Easy account &amp; data removal</h2>
+          <p class="muted">
+            Export your collection to CSV and permanently delete your account and stored data at any
+            time with no lock-in.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <div class="legal-content">
+      <section class="legal-section" aria-labelledby="acceptance-heading">
+        <h2 id="acceptance-heading">1. Acceptance of Terms &amp; Account Eligibility</h2>
+        <p>
+          By registering for or using {{ brand.name }}, you agree to be bound by these Terms &amp;
+          Conditions and our <a routerLink="/privacy">Privacy Policy</a>. You are responsible for
+          maintaining the confidentiality of your login credentials (including a minimum
+          10-character password) and for all activities that occur under your account.
+        </p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="ownership-heading">
+        <h2 id="ownership-heading">2. User Content &amp; Data Ownership</h2>
+        <p>
+          You retain all ownership rights to the collection items, descriptions, notes, CSV files,
+          and photographs you upload to {{ brand.name }}. You grant {{ brand.name }} a limited,
+          revocable license solely to store, process, display, and back up your content so that we
+          can provide the cataloging, AI scanning, and valuation features to your account.
+        </p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="acceptable-use-heading">
+        <h2 id="acceptable-use-heading">3. Acceptable Use</h2>
+        <p>When using {{ brand.name }}, you agree not to:</p>
+        <ul>
+          <li>Upload unlawful, infringing, or malicious files to the storage bucket or database.</li>
+          <li>
+            Attempt to bypass Row-Level Security (RLS) policies, probe other users' vaults, or
+            abuse automated AI scanning or valuation endpoints.
+          </li>
+          <li>
+            Interfere with or disrupt the integrity or performance of the application or its
+            underlying cloud services.
+          </li>
+        </ul>
+      </section>
+
+      <section class="legal-section" aria-labelledby="valuations-heading">
+        <h2 id="valuations-heading">4. AI Scanning &amp; Market Valuation Disclaimers</h2>
+        <p>
+          {{ brand.name }} provides automated field suggestions powered by Google Gemini Vision and
+          estimated market values derived from active eBay Browse API listings. These tools are
+          provided strictly on an <strong>"as-is" informational basis</strong>:
+        </p>
+        <ul>
+          <li>
+            AI-generated titles, years, sets, and grades should be reviewed by you for accuracy
+            before committing drafts to your collection.
+          </li>
+          <li>
+            eBay median prices reflect active listing samples at the time of the query and do not
+            constitute certified appraisals, financial advice, or insurance valuations.
+          </li>
+        </ul>
+      </section>
+
+      <section class="legal-section deletion-callout" id="account-deletion" aria-labelledby="termination-heading">
+        <div class="callout-header">
+          <span class="c-badge">Account Closure &amp; Erasure</span>
+          <h2 id="termination-heading">5. Account Termination and Stored Data Deletion</h2>
+        </div>
+        <p>
+          You may stop using {{ brand.name }} and delete your account along with all stored data at
+          any time. Because deletion is permanent and irreversible, we recommend exporting a CSV
+          backup of your collection first.
+        </p>
+        <ol>
+          <li>
+            <strong>In-App Deletion:</strong> Sign in to
+            <a routerLink="/collection">My Collection</a> and click
+            <strong>Delete account &amp; data</strong> at the bottom of the desktop sidebar or
+            inside the mobile <strong>Profile</strong> menu. Confirming this action immediately
+            deletes all of your cataloged items, drafts, valuations, and uploaded photos from cloud
+            storage, clears local browser preferences, and signs you out.
+          </li>
+          <li>
+            <strong>Individual Item Deletion:</strong> You can delete any single catalog item and
+            its stored photo at any time using the <strong>Delete</strong> button on the item card
+            or inside the <strong>Item Inspector</strong> drawer.
+          </li>
+          <li>
+            <strong>Email Deletion Request:</strong> If you cannot access your account or wish to
+            request complete erasure of your authentication record and stored data via support,
+            email
+            <a [href]="'mailto:' + brand.supportEmail + '?subject=Delete%20My%20Vaulted%20Account'">
+              {{ brand.supportEmail }}
+            </a>
+            from your registered email address. All account credentials, database rows, and stored
+            photos will be permanently purged within <strong>7 business days</strong> (and no later
+            than 30 days).
+          </li>
+        </ol>
+        <p>
+          For full details on how your data is stored, isolated, and erased, please review Section 3
+          of our <a routerLink="/privacy" fragment="account-deletion">Privacy Policy</a>.
+        </p>
+      </section>
+
+      <section class="legal-section" aria-labelledby="liability-heading">
+        <h2 id="liability-heading">6. Limitation of Liability &amp; Contact</h2>
+        <p>
+          {{ brand.name }} is provided "as is" and "as available" without warranties of any kind,
+          express or implied. To the fullest extent permitted by law, {{ brand.name }} shall not be
+          liable for any indirect, incidental, or consequential damages arising from your use of the
+          service or reliance on estimated valuations.
+        </p>
+        <p>
+          Questions about these Terms &amp; Conditions can be directed to
+          <a [href]="'mailto:' + brand.supportEmail">{{ brand.supportEmail }}</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <span>© {{ year }} {{ brand.name }} · {{ brand.tagline }}</span>
+    <nav class="foot-links" aria-label="Legal">
+      <a routerLink="/">Home</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/privacy">Privacy Policy</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/terms" aria-current="page">Terms &amp; Conditions</a>
+    </nav>
+  </footer>
+</div>

@@ -310,4 +310,23 @@ export class ItemList implements OnInit {
     await this.supabase.client.auth.signOut();
     await this.router.navigateByUrl('/');
   }
+
+  async deleteAccount() {
+    this.closePopup();
+    const confirmed = confirm(
+      'Permanently delete your account along with all stored collection items and uploaded photos? This action cannot be undone.',
+    );
+    if (!confirmed) return;
+
+    const deleted = await this.store.deleteAccountAndData();
+    if (!deleted) return;
+
+    try {
+      localStorage.removeItem(THEME_KEY);
+    } catch {
+      // ignore
+    }
+    await this.supabase.client.auth.signOut();
+    await this.router.navigateByUrl('/');
+  }
 }

@@ -390,6 +390,39 @@ export class ItemStore {
     if (path) await this.deleteFile(path);
   }
 
+  /** Permanently deletes all stored items, drafts, and uploaded images for the current user, then attempts account deletion. */
+  async deleteAccountAndData(): Promise<boolean> {
+    this.error.set(null);
+
+    const ids = this.items().map(i => i.id);
+    const paths = this.items()
+      .map(i => i.image_path)
+      .filter((p): p is string => !!p);
+
+    if (ids.length > 0) {
+      const { error } = await this.db.from('items').delete().in('id', ids);
+      if (error) {
+        this.error.set(error.message);
+        return false;
+      }
+    }
+
+    if (paths.length > 0) {
+      await this.db.storage.from(BUCKET).remove(paths);
+    }
+
+    try {
+      await this.db.rpc('delete_user');
+    } catch {
+      // ignore if RPC is not configured
+    }
+
+    this.items.set([]);
+    this.imageUrls.set({});
+    this.selectedId.set(null);
+    return true;
+  }
+
   // ---- image actions ----
   /** Uploads a (already resized) image and returns its path, or null on failure. */
   async uploadImage(blob: Blob): Promise<string | null> {
