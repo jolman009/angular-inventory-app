@@ -60,6 +60,34 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="sidebar-actions">
+        <div class="theme-row" role="group" aria-label="Theme mode">
+          <button
+            type="button"
+            [class.active]="theme() === 'system'"
+            (click)="setTheme('system')"
+          >
+            Auto
+          </button>
+          <button
+            type="button"
+            [class.active]="theme() === 'light'"
+            (click)="setTheme('light')"
+          >
+            Light
+          </button>
+          <button
+            type="button"
+            [class.active]="theme() === 'dark'"
+            (click)="setTheme('dark')"
+          >
+            Dark
+          </button>
+        </div>
+        <button type="button" class="btn-subtle" (click)="openPricing()">
+          Upgrade Membership
+        </button>
+      </div>
       <p class="user-email muted" [title]="supabase.session()?.user?.email ?? ''">
         {{ supabase.session()?.user?.email }}
       </p>
@@ -68,6 +96,39 @@
   </aside>
 
   <main class="page">
+    <div class="mobile-top-strip">
+      <div class="mobile-brand-row">
+        <a class="brand" routerLink="/collection">
+          <img ngSrc="logo.svg" alt="" width="28" height="28" priority />
+          <span>{{ brand.name }}</span>
+        </a>
+        <span class="c-badge">{{ store.committed().length }} items</span>
+      </div>
+
+      <div class="mobile-pills" role="tablist" aria-label="Quick category filter">
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="store.typeFilter() === 'all'"
+          [class.active]="store.typeFilter() === 'all'"
+          (click)="store.typeFilter.set('all')"
+        >
+          All ({{ store.committed().length }})
+        </button>
+        @for (t of types; track t) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="store.typeFilter() === t"
+            [class.active]="store.typeFilter() === t"
+            (click)="store.typeFilter.set(t)"
+          >
+            {{ typeLabels[t] }} ({{ store.countsByType()[t] ?? 0 }})
+          </button>
+        }
+      </div>
+    </div>
+
     <header class="top">
       <div>
         <h1>My Collection</h1>
@@ -76,7 +137,7 @@
         </p>
       </div>
 
-      <div class="toolbar-actions">
+      <div class="toolbar-actions desktop-actions">
         @if (!formOpen()) {
           <button type="button" class="btn-primary" (click)="openAdd()">+ Add item</button>
         }
@@ -325,6 +386,8 @@
             AI Quick Capture
           } @else if (importOpen()) {
             CSV Batch Import
+          } @else if (pricingOpen()) {
+            {{ brand.name }} Membership
           } @else {
             Item Inspector
           }
@@ -338,6 +401,35 @@
         <app-csv-import (done)="importOpen.set(false)" />
       } @else if (captureOpen()) {
         <app-quick-capture (done)="captureOpen.set(false)" (review)="startReview()" />
+      } @else if (pricingOpen()) {
+        <section class="pricing-panel" aria-label="Membership plans">
+          <article class="plan-card">
+            <span class="c-badge">Current Plan</span>
+            <h3>Collector (Free)</h3>
+            <div class="plan-price">$0 <span class="muted small">/ forever</span></div>
+            <ul class="plan-list muted">
+              <li>Unlimited cards, books, games &amp; records</li>
+              <li>Up to 50 Gemini AI photo scans per day</li>
+              <li>On-demand eBay median card estimates</li>
+              <li>CSV batch import &amp; backup export</li>
+            </ul>
+          </article>
+
+          <article class="plan-card pro">
+            <span class="c-badge">Coming Soon</span>
+            <h3>{{ brand.name }} Pro</h3>
+            <div class="plan-price">$6 <span class="muted small">/ month</span></div>
+            <ul class="plan-list">
+              <li>Unlimited Gemini Vision batch photo scanning</li>
+              <li>Automated weekly eBay portfolio re-valuation &amp; price alerts</li>
+              <li>Printable insurance &amp; appraisal PDF reports</li>
+              <li>Custom collection categories &amp; shared family vaults</li>
+            </ul>
+            <button type="button" class="btn-primary" disabled>
+              Pro Waitlist Opening Soon
+            </button>
+          </article>
+        </section>
       } @else if (inspectingItem(); as selected) {
         <div class="inspector">
           @if (selected.image_path && store.imageUrls()[selected.image_path]; as url) {
@@ -445,4 +537,169 @@
       }
     </aside>
   }
+
+  @if (activePopup()) {
+    <div class="popup-backdrop" (click)="closePopup()" aria-hidden="true"></div>
+  }
+
+  @if (activePopup() === 'data') {
+    <div class="bottom-popup" role="menu" aria-label="Import, export and valuation tools">
+      <div class="popup-header">
+        <strong>Collection Tools</strong>
+        <span class="c-badge">CSV &amp; eBay</span>
+      </div>
+      <button type="button" class="popup-item" role="menuitem" (click)="openImport()">
+        Import from CSV
+      </button>
+      <button
+        type="button"
+        class="popup-item"
+        role="menuitem"
+        [disabled]="!store.committed().length"
+        (click)="exportCsv()"
+      >
+        Export Collection CSV
+      </button>
+      @if (store.unvaluedCards().length > 0) {
+        <button
+          type="button"
+          class="popup-item btn-primary"
+          role="menuitem"
+          [disabled]="store.pricingProgress() !== null"
+          (click)="refreshMissingCards()"
+        >
+          Price {{ store.unvaluedCards().length }}
+          {{ store.unvaluedCards().length === 1 ? 'card' : 'cards' }} (eBay)
+        </button>
+      }
+    </div>
+  }
+
+  @if (activePopup() === 'profile') {
+    <div class="bottom-popup" role="menu" aria-label="User profile and settings">
+      <div class="popup-header">
+        <span class="popup-email" [title]="supabase.session()?.user?.email ?? ''">
+          {{ supabase.session()?.user?.email ?? 'Signed in' }}
+        </span>
+        <span class="c-badge">Free Tier</span>
+      </div>
+
+      <div>
+        <span class="facet-heading">Appearance</span>
+        <div class="theme-row" role="group" aria-label="Color theme">
+          <button
+            type="button"
+            [class.active]="theme() === 'system'"
+            (click)="setTheme('system')"
+          >
+            Auto
+          </button>
+          <button
+            type="button"
+            [class.active]="theme() === 'light'"
+            (click)="setTheme('light')"
+          >
+            Light
+          </button>
+          <button
+            type="button"
+            [class.active]="theme() === 'dark'"
+            (click)="setTheme('dark')"
+          >
+            Dark
+          </button>
+        </div>
+      </div>
+
+      <button type="button" class="popup-item" role="menuitem" (click)="openPricing()">
+        Upgrade Membership / Pricing
+      </button>
+
+      @if (store.drafts().length > 0) {
+        <button type="button" class="popup-item" role="menuitem" (click)="startReview()">
+          Review {{ store.drafts().length }} AI photo
+          {{ store.drafts().length === 1 ? 'draft' : 'drafts' }}
+        </button>
+      }
+
+      <button type="button" class="popup-item danger" role="menuitem" (click)="signOut()">
+        Sign out
+      </button>
+    </div>
+  }
+
+  <nav class="bottom-nav" aria-label="Mobile quick actions">
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      [class.active]="!drawerOpen() && !activePopup()"
+      (click)="goHome()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+      <span>Vault</span>
+    </button>
+
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      [class.active]="formOpen()"
+      (click)="openAdd()"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+      <span>Add Item</span>
+    </button>
+
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      [class.active]="captureOpen()"
+      (click)="openCapture()"
+    >
+      @if (store.drafts().length > 0) {
+        <span class="nav-badge">{{ store.drafts().length }}</span>
+      }
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h3l2-2h6l2 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+        <circle cx="12" cy="13" r="3.5" />
+      </svg>
+      <span>Capture</span>
+    </button>
+
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      [class.active]="activePopup() === 'data' || importOpen()"
+      [attr.aria-expanded]="activePopup() === 'data'"
+      (click)="togglePopup('data')"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4" />
+        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+      </svg>
+      <span>Import/Export</span>
+    </button>
+
+    <button
+      type="button"
+      class="bottom-nav-btn"
+      [class.active]="activePopup() === 'profile' || pricingOpen()"
+      [attr.aria-expanded]="activePopup() === 'profile'"
+      (click)="togglePopup('profile')"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+      </svg>
+      <span>Profile</span>
+    </button>
+  </nav>
 </div>

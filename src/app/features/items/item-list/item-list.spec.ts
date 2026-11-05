@@ -32,4 +32,22 @@ describe('ItemList', () => {
     fixture.detectChanges();
     expect(compiled.querySelector('.drawer')).toBeNull();
   });
+
+  it('should toggle mobile profile popup, switch theme, and open membership pricing', () => {
+    component.togglePopup('profile');
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.bottom-popup')).toBeTruthy();
+
+    component.setTheme('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    component.openPricing();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.pricing-panel')).toBeTruthy();
+    expect(compiled.querySelector('.bottom-popup')).toBeNull();
+
+    component.setTheme('system');
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+  });
 });

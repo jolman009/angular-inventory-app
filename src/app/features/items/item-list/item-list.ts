@@ -23,6 +23,10 @@ import {
 } from '../item.model';
 import { QuickCapture } from '../quick-capture/quick-capture';
 
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+const THEME_KEY = 'vaulted-theme';
+
 @Component({
   selector: 'app-item-list',
   imports: [ItemForm, CsvImport, QuickCapture, CurrencyPipe, DecimalPipe, NgOptimizedImage, RouterLink],
@@ -42,7 +46,7 @@ export class ItemList implements OnInit {
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly detailFields = DETAIL_FIELDS;
 
-  // Form & drawer visibility
+  // Form, drawer & mobile popup visibility
   protected readonly adding = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected readonly editingItem = computed(
@@ -52,14 +56,19 @@ export class ItemList implements OnInit {
   protected readonly sortOptions = SORT_OPTIONS;
   protected readonly importOpen = signal(false);
   protected readonly captureOpen = signal(false);
+  protected readonly pricingOpen = signal(false);
   protected readonly reviewing = signal(false);
+  protected readonly activePopup = signal<'data' | 'profile' | null>(null);
+  protected readonly theme = signal<ThemeMode>('system');
 
   // eBay valuation state for existing cards
   protected readonly refreshingCardId = signal<string | null>(null);
   protected readonly refreshNotice = signal<string | null>(null);
 
   protected readonly inspectingItem = computed(() => {
-    if (this.formOpen() || this.importOpen() || this.captureOpen()) return null;
+    if (this.formOpen() || this.importOpen() || this.captureOpen() || this.pricingOpen()) {
+      return null;
+    }
     return this.store.selected();
   });
 
@@ -68,38 +77,102 @@ export class ItemList implements OnInit {
       this.formOpen() ||
       this.importOpen() ||
       this.captureOpen() ||
+      this.pricingOpen() ||
       this.inspectingItem() !== null,
   );
 
   ngOnInit() {
+    this.initTheme();
     this.store.load();
   }
 
+  private initTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'light' || saved === 'dark') {
+        this.setTheme(saved);
+      }
+    } catch {
+      // ignore storage errors in restricted environments
+    }
+  }
+
+  setTheme(mode: ThemeMode) {
+    this.theme.set(mode);
+    const root = document.documentElement;
+    if (mode === 'system') {
+      root.removeAttribute('data-theme');
+      try {
+        localStorage.removeItem(THEME_KEY);
+      } catch {
+        // ignore
+      }
+    } else {
+      root.setAttribute('data-theme', mode);
+      try {
+        localStorage.setItem(THEME_KEY, mode);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  togglePopup(menu: 'data' | 'profile') {
+    this.activePopup.update(curr => (curr === menu ? null : menu));
+  }
+
+  closePopup() {
+    this.activePopup.set(null);
+  }
+
+  goHome() {
+    this.closePopup();
+    this.closeDrawer();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   openAdd() {
+    this.closePopup();
     this.importOpen.set(false);
     this.captureOpen.set(false);
+    this.pricingOpen.set(false);
     this.reviewing.set(false);
     this.editingId.set(null);
     this.adding.set(true);
   }
 
   openCapture() {
+    this.closePopup();
     this.adding.set(false);
     this.editingId.set(null);
     this.importOpen.set(false);
+    this.pricingOpen.set(false);
     this.captureOpen.set(true);
   }
 
   openImport() {
+    this.closePopup();
     this.adding.set(false);
     this.editingId.set(null);
     this.captureOpen.set(false);
+    this.pricingOpen.set(false);
     this.importOpen.set(true);
   }
 
+  openPricing() {
+    this.closePopup();
+    this.adding.set(false);
+    this.editingId.set(null);
+    this.captureOpen.set(false);
+    this.importOpen.set(false);
+    this.pricingOpen.set(true);
+  }
+
   startEdit(id: string) {
+    this.closePopup();
     this.importOpen.set(false);
     this.captureOpen.set(false);
+    this.pricingOpen.set(false);
     this.adding.set(false);
     this.editingId.set(id);
   }
@@ -114,6 +187,7 @@ export class ItemList implements OnInit {
     this.closeForm();
     this.importOpen.set(false);
     this.captureOpen.set(false);
+    this.pricingOpen.set(false);
     this.refreshNotice.set(null);
     this.store.selectedId.set(null);
   }
@@ -122,8 +196,10 @@ export class ItemList implements OnInit {
     const first = this.store.drafts()[0];
     if (!first) return;
 
+    this.closePopup();
     this.captureOpen.set(false);
     this.importOpen.set(false);
+    this.pricingOpen.set(false);
     this.adding.set(false);
     this.reviewing.set(true);
     this.startEdit(first.id);
@@ -142,6 +218,7 @@ export class ItemList implements OnInit {
   }
 
   exportCsv() {
+    this.closePopup();
     const today = new Date().toISOString().slice(0, 10);
     downloadCsv(`my-collection-${today}.csv`, itemsToCsv(this.store.committed()));
   }
@@ -176,6 +253,7 @@ export class ItemList implements OnInit {
   }
 
   async refreshMissingCards() {
+    this.closePopup();
     await this.store.refreshAllCardEstimates(true);
   }
 
@@ -228,6 +306,7 @@ export class ItemList implements OnInit {
   }
 
   async signOut() {
+    this.closePopup();
     await this.supabase.client.auth.signOut();
     await this.router.navigateByUrl('/');
   }
