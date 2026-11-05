@@ -1,9 +1,9 @@
 {
-  "name": "Shoebox",
-  "short_name": "Shoebox",
-  "description": "Cards, books, games, records. All in one box.",
+  "name": "Vaulted",
+  "short_name": "Vaulted",
+  "description": "Cards, books, games, records. Cataloged and valued.",
   "theme_color": "#2563eb",
-  "background_color": "#2563eb",
+  "background_color": "#0f172a",
   "display": "standalone",
   "scope": "/",
   "start_url": "/collection",

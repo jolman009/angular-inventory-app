@@ -102,7 +102,7 @@ export class Landing {
     {
       tag: 'Private PWA',
       title: 'Yours alone, anywhere',
-      text: 'Your collection is visible only to you. Install Shoebox on your phone or desktop and it opens like a native app.',
+      text: `Your collection is visible only to you. Install ${BRAND.name} on your phone or desktop and it opens like a native app.`,
     },
   ];
 

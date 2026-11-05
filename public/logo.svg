@@ -1,28 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Shoebox">
-  <rect width="512" height="512" rx="116" fill="#2563eb"/>
-  <!-- lid, tilted open at the left, sitting behind the card -->
-  <g transform="rotate(9 400 268)">
-    <rect x="104" y="222" width="300" height="48" rx="12" fill="#c9d8f7"/>
-    <rect x="104" y="256" width="300" height="14" rx="7" fill="#aebfe6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Vaulted">
+  <!-- Outer Vault Container -->
+  <rect width="512" height="512" rx="116" fill="#0f172a"/>
+  <rect x="18" y="18" width="476" height="476" rx="100" fill="none" stroke="#1e293b" stroke-width="8"/>
+
+  <!-- Top-Left Quadrant: Trading Card (Cobalt #2563eb) -->
+  <g>
+    <rect x="48" y="48" width="192" height="192" rx="40" fill="#2563eb"/>
+    <!-- Graded Card Slab Silhouette -->
+    <rect x="92" y="74" width="104" height="140" rx="12" fill="#ffffff"/>
+    <!-- Slab Grade Header Bar -->
+    <rect x="104" y="86" width="80" height="20" rx="5" fill="#ef4444"/>
+    <rect x="112" y="93" width="42" height="6" rx="3" fill="#ffffff"/>
+    <!-- Card Inner Frame & Diamond Emblem -->
+    <rect x="104" y="114" width="80" height="86" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="4"/>
+    <polygon points="144,132 162,157 144,182 126,157" fill="#1d4ed8"/>
   </g>
 
-  <!-- index card standing in the box -->
-  <g transform="rotate(-6 262 250)">
-    <rect x="186" y="118" width="152" height="210" rx="9" fill="#fffef8"/>
-    <rect x="186" y="164" width="152" height="5" fill="#e0484f"/>
-    <rect x="206" y="138" width="86" height="10" rx="5" fill="#1e2a44"/>
-    <rect x="206" y="190" width="108" height="6" rx="3" fill="#a9c1f2"/>
-    <rect x="206" y="216" width="96" height="6" rx="3" fill="#a9c1f2"/>
-    <rect x="206" y="242" width="108" height="6" rx="3" fill="#a9c1f2"/>
+  <!-- Top-Right Quadrant: Book (Amber #d97706) -->
+  <g>
+    <rect x="272" y="48" width="192" height="192" rx="40" fill="#d97706"/>
+    <!-- Hardcover Book Silhouette -->
+    <rect x="312" y="78" width="112" height="132" rx="12" fill="#fffbeb"/>
+    <!-- Book Spine & Page Lines -->
+    <rect x="312" y="78" width="24" height="132" rx="8" fill="#78350f"/>
+    <rect x="350" y="104" width="54" height="10" rx="5" fill="#b45309"/>
+    <rect x="350" y="124" width="40" height="8" rx="4" fill="#d97706"/>
+    <!-- Ribbon Bookmark -->
+    <polygon points="386,78 404,78 404,116 395,108 386,116" fill="#ef4444"/>
   </g>
 
-  <!-- box body -->
-  <rect x="112" y="262" width="288" height="142" rx="16" fill="#ffffff"/>
-  <rect x="112" y="262" width="288" height="14" fill="#e3ebfb"/>
+  <!-- Bottom-Left Quadrant: Game (Royal Violet #7c3aed) -->
+  <g>
+    <rect x="48" y="272" width="192" height="192" rx="40" fill="#7c3aed"/>
+    <!-- Tactile D-Pad Cross -->
+    <rect x="116" y="314" width="32" height="92" rx="8" fill="#ffffff"/>
+    <rect x="86" y="344" width="92" height="32" rx="8" fill="#ffffff"/>
+    <circle cx="132" cy="360" r="8" fill="#c4b5fd"/>
+    <!-- Action Buttons -->
+    <circle cx="204" cy="342" r="14" fill="#f43f5e"/>
+    <circle cx="186" cy="382" r="14" fill="#fbbf24"/>
+  </g>
 
-  <!-- label on the front -->
-  <rect x="196" y="304" width="120" height="58" rx="8" fill="#eaf0fd" stroke="#9db8f0" stroke-width="4"/>
-  <rect x="214" y="321" width="84" height="8" rx="4" fill="#1e2a44"/>
-  <rect x="214" y="341" width="56" height="8" rx="4" fill="#7f9ee6"/>
+  <!-- Bottom-Right Quadrant: Vinyl Record (Rose Magenta #db2777) -->
+  <g>
+    <rect x="272" y="272" width="192" height="192" rx="40" fill="#db2777"/>
+    <!-- Vinyl Disc -->
+    <circle cx="368" cy="368" r="68" fill="#111827"/>
+    <!-- Record Grooves -->
+    <circle cx="368" cy="368" r="54" fill="none" stroke="#374151" stroke-width="3"/>
+    <circle cx="368" cy="368" r="42" fill="none" stroke="#374151" stroke-width="3"/>
+    <!-- Center Label & Spindle Hole -->
+    <circle cx="368" cy="368" r="24" fill="#fbbf24"/>
+    <circle cx="368" cy="368" r="7" fill="#111827"/>
+  </g>
 
+  <!-- Center Vault Emblem Seal -->
+  <circle cx="256" cy="256" r="34" fill="#0f172a" stroke="#ffffff" stroke-width="6"/>
+  <polygon points="256,234 263,249 278,256 263,263 256,278 249,263 234,256 249,249" fill="#38bdf8"/>
 </svg>
