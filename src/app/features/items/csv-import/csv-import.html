@@ -8,7 +8,7 @@
   <div class="actions">
     <label class="file-button">
       Choose CSV file
-      <input type="file" accept=".csv,text/csv" (change)="onFile($event)" hidden />
+      <input type="file" accept=".csv,text/csv" class="visually-hidden" (change)="onFile($event)" />
     </label>
     <button type="button" (click)="done.emit()">Close</button>
   </div>

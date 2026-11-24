@@ -141,7 +141,7 @@
     <div class="photo-actions">
       <label class="file-button">
         {{ displayImage() ? 'Change photo' : 'Add photo' }}
-        <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
+        <input type="file" accept="image/*" class="visually-hidden" (change)="onFileChange($event)" />
       </label>
       @if (displayImage()) {
         <button type="button" (click)="removePhoto()">Remove</button>
