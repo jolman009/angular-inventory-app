@@ -18,6 +18,7 @@ export class CsvImport {
   protected readonly readError = signal<string | null>(null);
   protected readonly importing = signal(false);
   protected readonly imported = signal<number | null>(null);
+  protected readonly importError = signal<string | null>(null);
 
   // only show the first 10 problems so a messy file doesn't flood the screen
   protected readonly shownErrors = computed(() => this.result()?.errors.slice(0, 10) ?? []);
@@ -29,6 +30,7 @@ export class CsvImport {
     if (!file) return;
 
     this.imported.set(null);
+    this.importError.set(null);
     this.readError.set(null);
     this.result.set(null);
 
@@ -55,8 +57,10 @@ export class CsvImport {
     if (!r || !r.valid.length) return;
 
     this.importing.set(true);
+    this.importError.set(null);
     const count = await this.store.addMany(r.valid);
     this.imported.set(count);
+    this.importError.set(this.store.error());
     this.result.set(null);
     this.importing.set(false);
   }

@@ -65,6 +65,10 @@ export class ItemForm {
   protected readonly estimating = signal(false);
   protected readonly estimateNotice = signal<string | null>(null);
 
+  // save feedback, shown inside the form so it is visible while the drawer covers the page
+  protected readonly saveError = signal<string | null>(null);
+  protected readonly lastAdded = signal<string | null>(null);
+
   // photo state
   protected readonly saving = signal(false);
   protected readonly imageError = signal<string | null>(null);
@@ -99,10 +103,15 @@ export class ItemForm {
       .pipe(takeUntilDestroyed())
       .subscribe(type => this.buildDetails(type));
 
+    // Once the user starts on the next item, the "Added …" note has done its job.
+    this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.lastAdded.set(null));
+
     effect(() => {
       const item = this.item();
       this.clearPendingImage();
       this.estimateNotice.set(null);
+      this.saveError.set(null);
+      this.lastAdded.set(null);
 
       if (item) {
         this.form.reset(
@@ -257,6 +266,8 @@ export class ItemForm {
     }
 
     this.saving.set(true);
+    this.saveError.set(null);
+    this.lastAdded.set(null);
 
     const v = this.form.getRawValue();
     const fields: NewItem = {
@@ -276,6 +287,7 @@ export class ItemForm {
     if (file) {
       uploadedPath = await this.store.uploadImage(file);
       if (!uploadedPath) {
+        this.saveError.set(this.store.error() ?? 'The photo could not be uploaded.');
         this.saving.set(false);
         return;
       }
@@ -288,17 +300,23 @@ export class ItemForm {
     if (current) await this.store.update(current.id, fields);
     else await this.store.add(fields);
 
-    if (this.store.error()) {
+    const error = this.store.error();
+    if (error) {
       // saving the item failed, so don't leave an orphan file behind
       if (uploadedPath) await this.store.deleteFile(uploadedPath);
+      this.saveError.set(error);
       this.saving.set(false);
       return;
     }
 
     this.clearPendingImage();
     this.valuation.set(null);
-    if (current) this.saved.emit();
-    else this.form.reset({ type: v.type });
+    if (current) {
+      this.saved.emit();
+    } else {
+      this.form.reset({ type: v.type });
+      this.lastAdded.set(fields.title); // after reset, which would otherwise clear it
+    }
     this.saving.set(false);
   }
 
@@ -311,7 +329,10 @@ export class ItemForm {
     if (!current) return;
     if (!confirm('Discard this draft and its photo?')) return;
 
+    this.saveError.set(null);
     await this.store.remove(current.id);
-    if (!this.store.error()) this.saved.emit();
+    const error = this.store.error();
+    if (error) this.saveError.set(error);
+    else this.saved.emit();
   }
 }

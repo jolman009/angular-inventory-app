@@ -43,7 +43,10 @@
     </button>
   }
 
-  @if (imported() !== null) {
-    <p class="good">Imported {{ imported() }} items.</p>
+  @if (importError(); as err) {
+    <p class="bad" role="alert">{{ err }}</p>
+  }
+  @if (imported(); as count) {
+    <p class="good" role="status">Imported {{ count }} {{ count === 1 ? 'item' : 'items' }}.</p>
   }
 </section>

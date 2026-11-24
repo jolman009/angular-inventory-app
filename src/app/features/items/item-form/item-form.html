@@ -153,6 +153,13 @@
     }
   </div>
 
+  @if (saveError(); as err) {
+    <p class="form-error" role="alert">Couldn't save. {{ err }} Your changes are still here, so you can try again.</p>
+  }
+  @if (lastAdded(); as title) {
+    <p class="form-success" role="status">Added “{{ title }}”. Fill in the next item, or press Done.</p>
+  }
+
   <div class="buttons">
     <button type="submit" [disabled]="saving()">
       {{ saving() ? 'Saving…' : (isDraft() ? 'Save item' : (isEdit() ? 'Save changes' : 'Add item')) }}

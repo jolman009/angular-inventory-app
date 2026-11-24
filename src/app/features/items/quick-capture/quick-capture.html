@@ -31,7 +31,7 @@
   </div>
 
   @if (shots().length) {
-    <p class="summary">
+    <p class="summary" role="status">
       <strong>{{ savedCount() }}</strong> saved
       @if (busy()) { <span class="muted">· Saving…</span> }
     </p>

@@ -16,6 +16,20 @@ import {
 
 const BUCKET = 'item-images';
 
+/** Turns common raw Supabase/network errors into sentences a collector can act on. */
+export function friendlyError(message: string): string {
+  if (/failed to fetch|network ?error|load failed/i.test(message)) {
+    return "Can't reach the server. Check your connection and try again.";
+  }
+  if (/jwt|not authenticated|invalid claim|session/i.test(message)) {
+    return 'Your session has expired. Sign out and sign in again.';
+  }
+  if (/row-level security|permission denied/i.test(message)) {
+    return "You don't have permission to change this item.";
+  }
+  return message;
+}
+
 /** The text search looks through: the title plus the plain detail values (not the saved eBay valuation). */
 function searchText(item: Item): string {
   const values = Object.entries(item.details)
@@ -186,7 +200,7 @@ export class ItemStore {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) this.error.set(error.message);
+    if (error) this.error.set(friendlyError(error.message));
     else {
       this.items.set(data as Item[]);
       await this.signImages();
@@ -200,7 +214,7 @@ export class ItemStore {
     const { data, error } = await this.db.from('items').insert(item).select().single();
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => [data as Item, ...list]);
@@ -348,7 +362,7 @@ export class ItemStore {
       const { data, error } = await this.db.from('items').insert(chunk).select();
 
       if (error) {
-        this.error.set(`Saved ${added} of ${rows.length} rows, then stopped: ${error.message}`);
+        this.error.set(`Saved ${added} of ${rows.length} rows, then stopped. ${friendlyError(error.message)}`);
         break;
       }
       this.items.update(list => [...(data as Item[]), ...list]);
@@ -369,7 +383,7 @@ export class ItemStore {
       .single();
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => list.map(i => (i.id === id ? (data as Item) : i)));
@@ -388,7 +402,7 @@ export class ItemStore {
     const { error } = await this.db.from('items').update({ status }).eq('id', id);
     if (error) {
       this.items.set(previous);
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
     }
   }
 
@@ -397,7 +411,7 @@ export class ItemStore {
 
     const { error } = await this.db.from('items').delete().eq('id', id);
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => list.filter(i => i.id !== id));
@@ -417,7 +431,7 @@ export class ItemStore {
     if (ids.length > 0) {
       const { error } = await this.db.from('items').delete().in('id', ids);
       if (error) {
-        this.error.set(error.message);
+        this.error.set(friendlyError(error.message));
         return false;
       }
     }
@@ -454,7 +468,7 @@ export class ItemStore {
       .upload(path, blob, { contentType: 'image/jpeg' });
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return null;
     }
     return path;
