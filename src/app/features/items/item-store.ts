@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { blobToBase64 } from '../../core/blob';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { BRAND } from '../../core/brand';
 import { Supabase } from '../../core/supabase';
 import {
   CardPriceQuery,
@@ -437,13 +438,21 @@ export class ItemStore {
     }
 
     if (paths.length > 0) {
-      await this.db.storage.from(BUCKET).remove(paths);
+      const { error: storageError } = await this.db.storage.from(BUCKET).remove(paths);
+      if (storageError) console.warn('Some photos could not be deleted', storageError);
     }
 
-    try {
-      await this.db.rpc('delete_user');
-    } catch {
-      // ignore if RPC is not configured
+    // rpc() reports failure in its result instead of throwing, so the result must be checked.
+    const { error: rpcError } = await this.db.rpc('delete_user');
+    if (rpcError) {
+      console.error('delete_user failed', rpcError);
+      this.items.set([]);
+      this.imageUrls.set({});
+      this.selectedId.set(null);
+      this.error.set(
+        `Your items were deleted, but we couldn't close your account. Email ${BRAND.supportEmail} and we'll finish it for you.`,
+      );
+      return false;
     }
 
     this.items.set([]);

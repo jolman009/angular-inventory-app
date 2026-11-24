@@ -319,7 +319,12 @@ export class ItemList implements OnInit {
     if (!confirmed) return;
 
     const deleted = await this.store.deleteAccountAndData();
-    if (!deleted) return;
+    if (!deleted) {
+      // The reason is in the error banner at the top of the page; make sure it is in view.
+      this.closeDrawer();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     try {
       localStorage.removeItem(THEME_KEY);

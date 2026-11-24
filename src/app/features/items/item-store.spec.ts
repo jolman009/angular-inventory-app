@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
+import { Supabase } from '../../core/supabase';
 import { ItemStore } from './item-store';
 
 describe('ItemStore', () => {
@@ -162,11 +163,27 @@ describe('ItemStore', () => {
   });
 
   it('should clear local collection state when deleteAccountAndData succeeds on empty store', async () => {
+    const client = TestBed.inject(Supabase).client;
+    vi.spyOn(client, 'rpc').mockResolvedValue({ data: null, error: null } as never);
     service.items.set([]);
     service.selectedId.set('1');
     const result = await service.deleteAccountAndData();
     expect(result).toBe(true);
     expect(service.items()).toEqual([]);
     expect(service.selectedId()).toBeNull();
+  });
+
+  it('should report failure and keep the user signed in when delete_user fails', async () => {
+    const client = TestBed.inject(Supabase).client;
+    vi.spyOn(client, 'rpc').mockResolvedValue({
+      data: null,
+      error: { message: 'function delete_user() does not exist' },
+    } as never);
+    service.items.set([]);
+
+    const result = await service.deleteAccountAndData();
+
+    expect(result).toBe(false);
+    expect(service.error()).toContain("couldn't close your account");
   });
 });
