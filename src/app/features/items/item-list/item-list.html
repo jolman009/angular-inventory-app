@@ -376,7 +376,19 @@
             </div>
           </li>
         } @empty {
-          <li class="empty">Nothing matches yet. Tap “+ Add item” to start your collection.</li>
+          @if (store.committed().length === 0) {
+            <li class="empty">
+              Your collection is empty. Add an item, photograph several with Quick capture, or import
+              a spreadsheet to get started.
+            </li>
+          } @else {
+            <li class="empty">
+              No items match your search or filters.
+              <button type="button" class="btn-subtle" (click)="store.resetFilters()">
+                Reset filters
+              </button>
+            </li>
+          }
         }
       </ul>
     }

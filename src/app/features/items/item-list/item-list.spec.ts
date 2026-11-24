@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { ItemStore } from '../item-store';
 import { ItemList } from './item-list';
 
 describe('ItemList', () => {
@@ -49,5 +50,40 @@ describe('ItemList', () => {
 
     component.setTheme('system');
     expect(document.documentElement.getAttribute('data-theme')).toBeNull();
+  });
+
+  it('tells apart an empty collection from filters that hide every item', () => {
+    const store = TestBed.inject(ItemStore);
+    const el = fixture.nativeElement as HTMLElement;
+
+    store.loading.set(false); // the real load() is still waiting on the network in tests
+    store.items.set([]);
+    fixture.detectChanges();
+    expect(el.querySelector('.items li.empty')?.textContent).toContain('Your collection is empty');
+
+    store.items.set([
+      {
+        id: '1',
+        type: 'book',
+        title: 'Dune',
+        status: 'owned',
+        condition: null,
+        purchase_price: null,
+        notes: null,
+        details: {},
+        image_path: null,
+        draft: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    store.search.set('zzz');
+    fixture.detectChanges();
+    const empty = el.querySelector('.items li.empty');
+    expect(empty?.textContent).toContain('No items match');
+
+    (empty?.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(store.search()).toBe('');
+    expect(el.querySelector('.items li.empty')).toBeNull();
   });
 });

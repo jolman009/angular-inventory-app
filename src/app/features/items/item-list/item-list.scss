@@ -131,7 +131,11 @@
 
 .items li.empty {
   grid-column: 1 / -1;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
   padding: 2rem;
   color: var(--muted);
   cursor: default;

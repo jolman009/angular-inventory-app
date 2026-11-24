@@ -9,6 +9,8 @@
   --border: #e2e8f0;
   --primary: #2563eb;
   --primary-contrast: #ffffff;
+  /* Primary-coloured text that sits on a primary-tinted background (keeps 4.5:1 contrast). */
+  --primary-text: #1d4ed8;
   --danger: #b91c1c;
   --success: #15803d;
   --radius: 12px;
@@ -43,6 +45,7 @@
   --border: #262f3f;
   --primary: #60a5fa;
   --primary-contrast: #0b1220;
+  --primary-text: #93c5fd;
   --danger: #f87171;
   --success: #4ade80;
   --shadow: 0 1px 3px rgb(0 0 0 / 0.3);
@@ -59,6 +62,7 @@
     --border: #262f3f;
     --primary: #60a5fa;
     --primary-contrast: #0b1220;
+    --primary-text: #93c5fd;
     --danger: #f87171;
     --success: #4ade80;
     --shadow: 0 1px 3px rgb(0 0 0 / 0.3);
@@ -375,7 +379,7 @@ button[type='submit'],
 
 .facet-btn.active {
   background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  color: var(--primary);
+  color: var(--primary-text);
   border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
   font-weight: 600;
 }
@@ -565,7 +569,7 @@ button[type='submit'],
   background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
   border-radius: 999px;
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 600;
   font-size: 0.78rem;
 }
@@ -803,7 +807,7 @@ button[type='submit'],
   }
 
   .bottom-nav-btn.active {
-    color: var(--primary);
+    color: var(--primary-text);
     background: color-mix(in srgb, var(--primary) 10%, var(--surface));
   }
 
