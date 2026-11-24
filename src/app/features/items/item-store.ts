@@ -16,6 +16,14 @@ import {
 
 const BUCKET = 'item-images';
 
+/** The text search looks through: the title plus the plain detail values (not the saved eBay valuation). */
+function searchText(item: Item): string {
+  const values = Object.entries(item.details)
+    .filter(([key, value]) => key !== 'valuation' && (typeof value === 'string' || typeof value === 'number'))
+    .map(([, value]) => value);
+  return `${item.title} ${values.join(' ')}`.toLowerCase();
+}
+
 @Injectable({ providedIn: 'root' })
 export class ItemStore {
   private supabase = inject(Supabase);
@@ -54,7 +62,7 @@ export class ItemStore {
       i =>
         (type === 'all' || i.type === type) &&
         (status === 'all' || i.status === status) &&
-        (!q || `${i.title} ${Object.values(i.details).join(' ')}`.toLowerCase().includes(q)),
+        (!q || searchText(i).includes(q)),
     );
 
     return this.sortItems(matches, this.sortBy());
@@ -118,12 +126,19 @@ export class ItemStore {
     return counts;
   });
 
-  readonly totalSpent = computed(() =>
-    this.committed().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
+  /** Items the user actually has right now: owned, for sale, or lent out. Wishlist and sold are left out. */
+  readonly held = computed(() =>
+    this.committed().filter(i => i.status !== 'wishlist' && i.status !== 'sold'),
   );
 
+  /** What the user paid for the items they currently hold. */
+  readonly totalSpent = computed(() =>
+    this.held().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
+  );
+
+  /** Estimated value of the items the user currently holds (eBay median for cards, else price paid). */
   readonly totalEstimatedValue = computed(() =>
-    this.committed().reduce(
+    this.held().reduce(
       (sum, i) => sum + (getCardValuation(i.details)?.medianPrice ?? i.purchase_price ?? 0),
       0,
     ),
@@ -140,7 +155,7 @@ export class ItemStore {
   readonly pricingProgress = signal<{ current: number; total: number } | null>(null);
 
   readonly pricedCount = computed(
-    () => this.committed().filter(i => (i.purchase_price ?? 0) > 0).length,
+    () => this.held().filter(i => (i.purchase_price ?? 0) > 0).length,
   );
 
   readonly averageSpent = computed(() => {
