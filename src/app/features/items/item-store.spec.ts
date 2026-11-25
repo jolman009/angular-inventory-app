@@ -179,11 +179,29 @@ describe('ItemStore', () => {
       data: null,
       error: { message: 'function delete_user() does not exist' },
     } as never);
-    service.items.set([]);
+    const deleteRows = vi.spyOn(client, 'from');
+    service.items.set([
+      {
+        id: 'keep-me',
+        type: 'book',
+        title: 'Dune',
+        status: 'owned',
+        condition: null,
+        purchase_price: null,
+        notes: null,
+        details: {},
+        image_path: null,
+        draft: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
 
     const result = await service.deleteAccountAndData();
 
     expect(result).toBe(false);
-    expect(service.error()).toContain("couldn't close your account");
+    // Items are only deleted by the server function, so a failed call leaves them in place
+    expect(deleteRows).not.toHaveBeenCalled();
+    expect(service.items().map(i => i.id)).toEqual(['keep-me']);
+    expect(service.error()).toContain("couldn't delete your account");
   });
 });

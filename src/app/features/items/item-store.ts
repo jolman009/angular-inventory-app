@@ -420,38 +420,35 @@ export class ItemStore {
     if (path) await this.deleteFile(path);
   }
 
-  /** Permanently deletes all stored items, drafts, and uploaded images for the current user, then attempts account deletion. */
+  /**
+   * Permanently deletes the user's photos, then asks the database to delete their items and their
+   * login in one step (the `delete_user` function in supabase/migrations). If that step fails,
+   * nothing in the collection is removed, so the user is never left half-deleted.
+   */
   async deleteAccountAndData(): Promise<boolean> {
     this.error.set(null);
 
-    const ids = this.items().map(i => i.id);
-    const paths = this.items()
-      .map(i => i.image_path)
-      .filter((p): p is string => !!p);
-
-    if (ids.length > 0) {
-      const { error } = await this.db.from('items').delete().in('id', ids);
-      if (error) {
-        this.error.set(friendlyError(error.message));
-        return false;
+    // 1. Photos live in Storage, which the database function can't clean up, so remove them first.
+    //    Listing the user's folder also catches photos for items that were never loaded.
+    const { data } = await this.db.auth.getSession();
+    const uid = data.session?.user.id;
+    if (uid) {
+      const paths = await this.listUserPhotos(uid);
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await this.db.storage.from(BUCKET).remove(paths.slice(i, i + 100));
+        if (error) console.warn('Some photos could not be deleted', error);
       }
     }
 
-    if (paths.length > 0) {
-      const { error: storageError } = await this.db.storage.from(BUCKET).remove(paths);
-      if (storageError) console.warn('Some photos could not be deleted', storageError);
-    }
-
-    // rpc() reports failure in its result instead of throwing, so the result must be checked.
+    // 2. Items + login, in one transaction on the server.
+    //    rpc() reports failure in its result instead of throwing, so the result must be checked.
     const { error: rpcError } = await this.db.rpc('delete_user');
     if (rpcError) {
       console.error('delete_user failed', rpcError);
-      this.items.set([]);
-      this.imageUrls.set({});
-      this.selectedId.set(null);
       this.error.set(
-        `Your items were deleted, but we couldn't close your account. Email ${BRAND.supportEmail} and we'll finish it for you.`,
+        `We couldn't delete your account, so your items are still saved. Please try again, or email ${BRAND.supportEmail} and we'll do it for you.`,
       );
+      await this.signImages(); // photos may be gone now; refresh what we can show
       return false;
     }
 
@@ -459,6 +456,21 @@ export class ItemStore {
     this.imageUrls.set({});
     this.selectedId.set(null);
     return true;
+  }
+
+  /** Every file path in the user's photo folder (`<uid>/…`). */
+  private async listUserPhotos(uid: string): Promise<string[]> {
+    const paths: string[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await this.db.storage
+        .from(BUCKET)
+        .list(uid, { limit: pageSize, offset });
+      if (error || !data) break;
+      paths.push(...data.filter(f => f.id).map(f => `${uid}/${f.name}`));
+      if (data.length < pageSize) break;
+    }
+    return paths;
   }
 
   // ---- image actions ----
