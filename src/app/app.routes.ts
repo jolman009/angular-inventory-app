@@ -16,6 +16,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login').then(m => m.Login),
   },
   {
+    // Where the password-reset email lands. No guard: the link signs the visitor in.
+    path: 'reset-password',
+    title: `Reset password - ${BRAND.name}`,
+    loadComponent: () =>
+      import('./features/auth/reset-password/reset-password').then(m => m.ResetPassword),
+  },
+  {
     path: 'collection',
     title: `My collection - ${BRAND.name}`,
     canActivate: [authGuard],
