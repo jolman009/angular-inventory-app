@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const DAILY_LIMIT = 50; // scans per user per day
+const FREE_DAILY_LIMIT = 3; // scans per day on the free plan
+const PRO_DAILY_LIMIT = 50; // fair-use cap for Vaulted Pro (each scan is a paid AI call)
 const MAX_IMAGE_CHARS = 4_000_000; // base64 characters (roughly 3 MB of image)
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -96,17 +97,32 @@ Deno.serve(async req => {
     return json({ error: 'Unknown item type.' }, 400);
   }
 
-  // 3. Daily limit per user.
+  // 3. Daily limit per user, by plan.
+  const { data: isPro, error: planError } = await admin.rpc('is_pro', { p_user: auth.user.id });
+  if (planError) {
+    console.error('is_pro failed', planError);
+    return json({ error: 'Could not check your scan limit.' }, 500);
+  }
+  const dailyLimit = isPro ? PRO_DAILY_LIMIT : FREE_DAILY_LIMIT;
+
   const { data: allowed, error: limitError } = await admin.rpc('claim_scan', {
     p_user: auth.user.id,
-    p_limit: DAILY_LIMIT,
+    p_limit: dailyLimit,
   });
   if (limitError) {
     console.error('claim_scan failed', limitError);
     return json({ error: 'Could not check your scan limit.' }, 500);
   }
   if (!allowed) {
-    return json({ error: `You have used all ${DAILY_LIMIT} scans for today. Try again tomorrow.` }, 429);
+    return isPro
+      ? json({ error: `You have used all ${dailyLimit} scans for today. Try again tomorrow.` }, 429)
+      : json(
+          {
+            error: `You have used your ${dailyLimit} free scans for today. Vaulted Pro includes ${PRO_DAILY_LIMIT} a day.`,
+            code: 'upgrade',
+          },
+          429,
+        );
   }
 
   // 4. Ask Gemini.

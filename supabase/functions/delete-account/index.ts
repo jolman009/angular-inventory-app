@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Deletes the caller's whole account in one request: their photos, their items and their login.
+// Deletes the caller's whole account in one request: their Pro subscription, photos, items and login.
 // Runs on the server with the service role, so the browser never needs those powers.
 
 const BUCKET = 'item-images';
@@ -29,7 +29,38 @@ Deno.serve(async req => {
   if (authError || !auth.user) return json({ error: 'Please sign in again.' }, 401);
   const uid = auth.user.id;
 
-  // 2. Photos first. If this fails we stop, so the account and items are left untouched
+  // 2. Stop billing first. Deleting the Stripe customer cancels any Vaulted Pro subscription
+  //    at once, so nobody is charged for an account that no longer exists. If this fails we
+  //    stop before deleting anything.
+  const { data: billing } = await admin
+    .from('subscriptions')
+    .select('stripe_customer_id')
+    .eq('user_id', uid)
+    .maybeSingle();
+  if (billing?.stripe_customer_id) {
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    let cancelled = false;
+    if (stripeKey) {
+      const res = await fetch(`https://api.stripe.com/v1/customers/${encodeURIComponent(billing.stripe_customer_id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${stripeKey}` },
+        signal: AbortSignal.timeout(15_000),
+      }).catch(e => {
+        console.error('Stripe request failed', e);
+        return null;
+      });
+      // 404 means Stripe already has no such customer, which is fine.
+      cancelled = !!res && (res.ok || res.status === 404);
+      if (res && !cancelled) console.error('Stripe customer delete failed', res.status, (await res.text()).slice(0, 300));
+    } else {
+      console.error('STRIPE_SECRET_KEY is not set, so the subscription could not be cancelled');
+    }
+    if (!cancelled) {
+      return json({ error: "We couldn't cancel your Vaulted Pro subscription. Nothing was deleted, so please try again." }, 500);
+    }
+  }
+
+  // 3. Photos next. If this fails we stop, so the account and items are left untouched
   //    and the user can simply try again.
   const storage = admin.storage.from(BUCKET);
   const paths: string[] = [];
@@ -51,7 +82,7 @@ Deno.serve(async req => {
     }
   }
 
-  // 3. The login. Items and scan counts are removed with it by the database
+  // 4. The login. Items and scan counts are removed with it by the database
   //    (their user_id columns use ON DELETE CASCADE).
   const { error: deleteError } = await admin.auth.admin.deleteUser(uid);
   if (deleteError) {

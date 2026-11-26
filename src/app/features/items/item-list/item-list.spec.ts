@@ -45,7 +45,7 @@ describe('ItemList', () => {
 
     component.openPricing();
     fixture.detectChanges();
-    expect(compiled.querySelector('.pricing-panel')).toBeTruthy();
+    expect(compiled.querySelector('app-plan-panel')).toBeTruthy();
     expect(compiled.querySelector('.bottom-popup')).toBeNull();
 
     component.setTheme('system');
