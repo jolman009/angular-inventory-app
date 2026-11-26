@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { ItemStore } from '../item-store';
 import { ItemList } from './item-list';
@@ -131,5 +131,33 @@ describe('ItemList', () => {
     expect(el.querySelector('.inspector h2')?.textContent).toContain('Dune');
     // no misused ARIA roles
     expect(el.querySelector('[role=menu], [role=menuitem], [role=tab], [role=tablist]')).toBeNull();
+  });
+
+  it('puts the open panel and filters in the address bar', async () => {
+    const router = TestBed.inject(Router);
+    const store = TestBed.inject(ItemStore);
+    component.openAdd();
+    store.statusFilter.set('for_sale');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(router.url).toBe('/?panel=add&status=for_sale');
+  });
+
+  it('asks before leaving the page with unsaved edits', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(component.canLeave()).toBe(true); // nothing open: no question
+    expect(confirmSpy).not.toHaveBeenCalled();
+
+    component.openAdd();
+    fixture.detectChanges();
+    const form = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      'input[formcontrolname=title]',
+    )!;
+    form.value = 'Half typed';
+    form.dispatchEvent(new Event('input'));
+
+    expect(component.canLeave()).toBe(false);
+    expect(confirmSpy).toHaveBeenCalledWith('Discard your unsaved changes?');
+    confirmSpy.mockRestore();
   });
 });
