@@ -8,6 +8,7 @@ import {
   CardValuation,
   Item,
   ItemStatus,
+  MEDIA_TYPE_SINGULAR,
   MediaType,
   NewItem,
   ScanSuggestion,
@@ -244,7 +245,7 @@ export class ItemStore {
 
     await this.add({
       type,
-      title: suggestion?.title || `Untitled ${type}`,
+      title: suggestion?.title || `Untitled ${MEDIA_TYPE_SINGULAR[type].toLowerCase()}`,
       status: 'owned',
       condition: null,
       purchase_price: null,
