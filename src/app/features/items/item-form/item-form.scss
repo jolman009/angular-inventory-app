@@ -1,17 +1,12 @@
 .item-form {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  gap: var(--space-4);
+  /* Rendered inside the drawer panel, so no card of its own. */
 }
 
 h2 {
-  font-size: 1.15rem;
+  font-size: var(--text-xl);
 }
 
 label {
@@ -19,13 +14,13 @@ label {
   flex-direction: column;
   gap: 0.3rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .details {
@@ -33,7 +28,7 @@ label {
   margin: 0;
   padding: 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .details legend {
@@ -45,7 +40,7 @@ label {
 .details .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .field-error {
@@ -55,18 +50,18 @@ label {
 
 .buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .photo {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .photo-label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .photo-preview {
@@ -74,12 +69,12 @@ label {
   max-height: 200px;
   object-fit: cover;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .photo-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .file-button {
@@ -88,10 +83,11 @@ label {
   min-height: 44px;
   padding: 0 1rem;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-weight: 400;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
 @media (max-width: 520px) {
@@ -107,7 +103,7 @@ label {
 .form-success {
   margin: 0;
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .form-error {
@@ -119,4 +115,9 @@ label {
   background: color-mix(in srgb, var(--success) 10%, var(--surface));
   color: var(--success);
   font-weight: 600;
+}
+
+.file-button:hover {
+  background: var(--surface-subtle);
+  border-color: var(--text);
 }

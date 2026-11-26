@@ -1,18 +1,13 @@
 .import {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  gap: var(--space-3);
+  /* Rendered inside the drawer panel, so no card of its own. */
 }
 
-h2 { font-size: 1.15rem; }
+h2 { font-size: var(--text-xl); }
 
-.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
 .file-button {
   display: inline-flex;
@@ -20,8 +15,9 @@ h2 { font-size: 1.15rem; }
   min-height: 44px;
   padding: 0 1rem;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -34,6 +30,11 @@ h2 { font-size: 1.15rem; }
   text-decoration: underline;
 }
 
-.errors { margin: 0; padding-left: 1.25rem; font-size: 0.9rem; color: var(--danger); }
+.errors { margin: 0; padding-left: 1.25rem; font-size: var(--text-sm); color: var(--danger); }
 .bad { color: var(--danger); }
 .good { color: var(--success); font-weight: 600; }
+
+.file-button:hover {
+  background: var(--surface-subtle);
+  border-color: var(--text);
+}
