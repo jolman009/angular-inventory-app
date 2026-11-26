@@ -437,3 +437,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/ebay-price/deno.json"
 entrypoint = "./functions/ebay-price/index.ts"
+
+[functions.delete-account]
+enabled = true
+# The function checks the caller's login token itself (like scan-item and ebay-price).
+verify_jwt = false
+import_map = "./functions/delete-account/deno.json"
+entrypoint = "./functions/delete-account/index.ts"

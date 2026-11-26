@@ -444,27 +444,20 @@ export class ItemStore {
   async deleteAccountAndData(): Promise<boolean> {
     this.error.set(null);
 
-    // 1. Photos live in Storage, which the database function can't clean up, so remove them first.
-    //    Listing the user's folder also catches photos for items that were never loaded.
-    const { data } = await this.db.auth.getSession();
-    const uid = data.session?.user.id;
-    if (uid) {
-      const paths = await this.listUserPhotos(uid);
-      for (let i = 0; i < paths.length; i += 100) {
-        const { error } = await this.db.storage.from(BUCKET).remove(paths.slice(i, i + 100));
-        if (error) console.warn('Some photos could not be deleted', error);
+    // One server call removes photos, items and the login. It stops before touching the
+    // account if the photos can't be removed, so a failure never leaves a half-deleted account.
+    const { error } = await this.db.functions.invoke('delete-account', { method: 'POST' });
+    if (error) {
+      console.error('delete-account failed', error);
+      let reason = "We couldn't delete your account, so your items are still saved. Please try again";
+      if (error instanceof FunctionsHttpError) {
+        try {
+          reason = ((await error.context.json()).error ?? reason).replace(/\.$/, '');
+        } catch {
+          // keep the generic message
+        }
       }
-    }
-
-    // 2. Items + login, in one transaction on the server.
-    //    rpc() reports failure in its result instead of throwing, so the result must be checked.
-    const { error: rpcError } = await this.db.rpc('delete_user');
-    if (rpcError) {
-      console.error('delete_user failed', rpcError);
-      this.error.set(
-        `We couldn't delete your account, so your items are still saved. Please try again, or email ${BRAND.supportEmail} and we'll do it for you.`,
-      );
-      await this.signImages(); // photos may be gone now; refresh what we can show
+      this.error.set(`${reason}, or email ${BRAND.supportEmail} and we'll do it for you.`);
       return false;
     }
 
@@ -474,22 +467,6 @@ export class ItemStore {
     return true;
   }
 
-  /** Every file path in the user's photo folder (`<uid>/…`). */
-  private async listUserPhotos(uid: string): Promise<string[]> {
-    const paths: string[] = [];
-    const pageSize = 1000;
-    for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await this.db.storage
-        .from(BUCKET)
-        .list(uid, { limit: pageSize, offset });
-      if (error || !data) break;
-      paths.push(...data.filter(f => f.id).map(f => `${uid}/${f.name}`));
-      if (data.length < pageSize) break;
-    }
-    return paths;
-  }
-
-  // ---- image actions ----
   /** Uploads a (already resized) image and returns its path, or null on failure. */
   async uploadImage(blob: Blob): Promise<string | null> {
     const { data } = await this.db.auth.getSession();

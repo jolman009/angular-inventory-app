@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 import { Supabase } from '../../core/supabase';
 import { ItemStore } from './item-store';
@@ -164,20 +165,26 @@ describe('ItemStore', () => {
 
   it('should clear local collection state when deleteAccountAndData succeeds on empty store', async () => {
     const client = TestBed.inject(Supabase).client;
-    vi.spyOn(client, 'rpc').mockResolvedValue({ data: null, error: null } as never);
+    // client.functions builds a new object on every read, so spy on the shared prototype
+    const invoke = vi.spyOn(Object.getPrototypeOf(client.functions), 'invoke').mockResolvedValue({ data: { ok: true }, error: null } as never);
     service.items.set([]);
     service.selectedId.set('1');
     const result = await service.deleteAccountAndData();
     expect(result).toBe(true);
+    expect(invoke).toHaveBeenCalledWith('delete-account', { method: 'POST' });
     expect(service.items()).toEqual([]);
     expect(service.selectedId()).toBeNull();
   });
 
-  it('should report failure and keep the user signed in when delete_user fails', async () => {
+  it('should report failure and keep the user signed in when delete-account fails', async () => {
     const client = TestBed.inject(Supabase).client;
-    vi.spyOn(client, 'rpc').mockResolvedValue({
+    const serverReply = new Response(
+      JSON.stringify({ error: "We couldn't remove your photos. Nothing was deleted, so please try again." }),
+      { status: 500 },
+    );
+    vi.spyOn(Object.getPrototypeOf(client.functions), 'invoke').mockResolvedValue({
       data: null,
-      error: { message: 'function delete_user() does not exist' },
+      error: new FunctionsHttpError(serverReply),
     } as never);
     const deleteRows = vi.spyOn(client, 'from');
     service.items.set([
@@ -202,7 +209,20 @@ describe('ItemStore', () => {
     // Items are only deleted by the server function, so a failed call leaves them in place
     expect(deleteRows).not.toHaveBeenCalled();
     expect(service.items().map(i => i.id)).toEqual(['keep-me']);
-    expect(service.error()).toContain("couldn't delete your account");
+    expect(service.error()).toBe(
+      "We couldn't remove your photos. Nothing was deleted, so please try again, or email privacy@vaulted.app and we'll do it for you.",
+    );
+  });
+
+  it('falls back to a general message when the server gives no reason', async () => {
+    const client = TestBed.inject(Supabase).client;
+    vi.spyOn(Object.getPrototypeOf(client.functions), 'invoke').mockResolvedValue({
+      data: null,
+      error: new Error('Failed to send a request to the Edge Function'),
+    } as never);
+
+    expect(await service.deleteAccountAndData()).toBe(false);
+    expect(service.error()).toContain("couldn't delete your account, so your items are still saved");
   });
 
   it('loads every item past the 1,000-row limit, one page at a time', async () => {
