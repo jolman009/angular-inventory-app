@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, output, signal } from '@angular/core';
 import { resizeImage } from '../../../core/resize-image';
 import { ItemStore } from '../item-store';
-import { MEDIA_TYPES, MediaType } from '../item.model';
+import { MEDIA_TYPES, MEDIA_TYPE_SINGULAR, MediaType } from '../item.model';
 
 interface Shot {
   id: number;
@@ -25,6 +25,7 @@ export class QuickCapture implements OnDestroy {
   readonly review = output<void>();
 
   protected readonly types = MEDIA_TYPES;
+  protected readonly typeNames = MEDIA_TYPE_SINGULAR;
   protected readonly type = signal<MediaType>('card');
   protected readonly shots = signal<Shot[]>([]);
   protected readonly savedCount = computed(() => this.shots().filter(s => s.status === 'saved').length);

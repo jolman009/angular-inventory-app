@@ -13,7 +13,7 @@
         [class.on]="type() === t"
         (click)="type.set(t)"
       >
-        {{ t }}
+        {{ typeNames[t] }}
       </button>
     }
   </div>
@@ -48,7 +48,7 @@
             {{ s.status === 'failed' ? s.message : (s.status === 'saved' ? 'Saved' : 'Saving…') }}
           </span>
           @if (s.note) { <span class="note">{{ s.note }}</span> }
-          <span class="kind">{{ s.type }}</span>
+          <span class="kind">{{ typeNames[s.type] }}</span>
         </li>
       }
     </ul>

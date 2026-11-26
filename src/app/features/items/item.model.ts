@@ -11,6 +11,14 @@ export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
   vinyl: 'Records',
 };
 
+/** Singular names, for a single item ("Record details", a "Record" badge). */
+export const MEDIA_TYPE_SINGULAR: Record<MediaType, string> = {
+  card: 'Card',
+  book: 'Book',
+  game: 'Game',
+  vinyl: 'Record',
+};
+
 export const STATUS_LABELS: Record<ItemStatus, string> = {
   owned: 'Owned',
   wishlist: 'Wishlist',

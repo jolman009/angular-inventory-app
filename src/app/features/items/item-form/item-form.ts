@@ -28,8 +28,10 @@ import {
   Item,
   ItemStatus,
   MEDIA_TYPES,
+  MEDIA_TYPE_SINGULAR,
   MediaType,
   NewItem,
+  STATUS_LABELS,
   TITLE_LABELS,
   getCardValuation,
 } from '../item.model';
@@ -53,6 +55,8 @@ export class ItemForm {
   protected readonly isDraft = computed(() => this.item()?.draft ?? false);
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
+  protected readonly typeNames = MEDIA_TYPE_SINGULAR;
+  protected readonly statusNames = STATUS_LABELS;
 
   // type-specific fields
   protected readonly currentType = signal<MediaType>('book');
@@ -95,6 +99,22 @@ export class ItemForm {
     notes: [''],
     details: this.detailsGroup,
   });
+
+  // Error checks shared by the message and the input's aria-invalid/aria-describedby,
+  // so a screen reader announces the same error the user sees.
+  protected titleInvalid(): boolean {
+    const c = this.form.controls.title;
+    return c.touched && c.hasError('required');
+  }
+
+  protected detailInvalid(key: string): boolean {
+    const c = this.detailsGroup.controls[key];
+    return !!c && c.touched && c.hasError('pattern');
+  }
+
+  protected priceInvalid(): boolean {
+    return this.form.controls.purchase_price.hasError('min');
+  }
 
   constructor() {
     this.buildDetails('book');

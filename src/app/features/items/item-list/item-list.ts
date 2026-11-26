@@ -27,6 +27,7 @@ import {
   ItemStatus,
   MEDIA_TYPE_LABELS,
   MEDIA_TYPES,
+  MEDIA_TYPE_SINGULAR,
   MediaType,
   SORT_OPTIONS,
   STATUS_LABELS,
@@ -63,6 +64,7 @@ export class ItemList implements OnInit {
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
   protected readonly typeLabels = MEDIA_TYPE_LABELS;
+  protected readonly typeNames = MEDIA_TYPE_SINGULAR;
   protected readonly statusLabels = STATUS_LABELS;
   protected readonly detailFields = DETAIL_FIELDS;
 

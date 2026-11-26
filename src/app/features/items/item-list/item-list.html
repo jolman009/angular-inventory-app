@@ -330,11 +330,11 @@
               @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
                 <img [src]="url" [alt]="item.title" class="thumb" />
               } @else {
-                <div class="thumb-placeholder" aria-hidden="true">{{ item.type }}</div>
+                <div class="thumb-placeholder" aria-hidden="true">{{ typeNames[item.type] }}</div>
               }
               <div class="item-info">
                 <div class="item-badges">
-                  <span class="c-badge">{{ item.type }}</span>
+                  <span class="c-badge">{{ typeNames[item.type] }}</span>
                   <div class="price-group">
                     @if (cardValuation(item); as val) {
                       <span class="est-badge" title="eBay Median Estimate">
