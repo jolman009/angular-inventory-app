@@ -1,4 +1,4 @@
-import Stripe from 'npm:stripe@17.7.0';
+import Stripe from 'npm:stripe@23.2.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // Opens Stripe's billing page, where a Pro member can change their card, switch between

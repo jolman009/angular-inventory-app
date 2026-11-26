@@ -1,9 +1,13 @@
-import Stripe from 'npm:stripe@17.7.0';
+import Stripe from 'npm:stripe@23.2.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // Stripe calls this address whenever a subscription starts, renews, changes, fails to pay
 // or ends. It copies the subscription's current state into the subscriptions table, which is
 // what the app and the other functions read to decide who has Pro.
+//
+// It also reacts to money coming back: a dispute (chargeback) or an early fraud warning ends that
+// customer's Pro straight away, so a stolen card isn't charged again. Refunds are only logged:
+// you decide in the Stripe Dashboard whether a refunded person also loses Pro.
 //
 // Secrets:
 //   STRIPE_SECRET_KEY      the same key the billing functions use
@@ -30,16 +34,14 @@ async function sync(subscriptionId: string) {
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
 
-  // Find whose subscription it is: the id we attached at checkout, else the saved customer.
-  let userId = sub.metadata?.user_id as string | undefined;
-  if (!userId) {
-    const { data } = await admin
-      .from('subscriptions')
-      .select('user_id')
-      .eq('stripe_customer_id', customerId)
-      .maybeSingle();
-    userId = data?.user_id;
-  }
+  // Find whose subscription it is: the Stripe customer we saved at checkout, else (as a backup)
+  // the Vaulted user id we attached to the subscription.
+  const { data: owner } = await admin
+    .from('subscriptions')
+    .select('user_id')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle();
+  const userId = (owner?.user_id as string | undefined) ?? (sub.metadata?.user_id as string | undefined);
   if (!userId) {
     console.warn('No Vaulted user for Stripe customer', customerId);
     return;
@@ -83,6 +85,27 @@ async function sync(subscriptionId: string) {
   if (error) throw error;
 }
 
+/** The subscription an invoice belongs to, if any (newer API versions keep it under `parent`). */
+function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const ref = invoice.parent?.subscription_details?.subscription;
+  if (!ref) return null;
+  return typeof ref === 'string' ? ref : ref.id;
+}
+
+/** Ends a customer's Pro now (Vaulted gives each customer at most one live subscription). */
+async function cancelCustomerSubscriptions(customer: string | { id: string } | null, reason: string) {
+  const customerId = typeof customer === 'string' ? customer : customer?.id;
+  if (!customerId) return;
+  const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 });
+  for (const sub of subs.data) {
+    if (['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(sub.status)) {
+      console.warn(`Cancelling ${sub.id} for customer ${customerId}: ${reason}`);
+      await stripe.subscriptions.cancel(sub.id);
+      await sync(sub.id);
+    }
+  }
+}
+
 Deno.serve(async req => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
@@ -105,6 +128,33 @@ Deno.serve(async req => {
         if (session.mode === 'subscription' && session.subscription) {
           await sync(typeof session.subscription === 'string' ? session.subscription : session.subscription.id);
         }
+        break;
+      }
+      case 'invoice.paid':
+      case 'invoice.payment_failed': {
+        // Renewals and failed card charges. The subscription events usually say the same thing,
+        // but re-reading here keeps the plan right even if one of those is delayed.
+        const subId = invoiceSubscriptionId(event.data.object as Stripe.Invoice);
+        if (subId) await sync(subId);
+        break;
+      }
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute;
+        const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge.id;
+        const charge = await stripe.charges.retrieve(chargeId);
+        await cancelCustomerSubscriptions(charge.customer, `dispute ${dispute.id} (${dispute.reason})`);
+        break;
+      }
+      case 'radar.early_fraud_warning.created': {
+        const warning = event.data.object as Stripe.Radar.EarlyFraudWarning;
+        const chargeId = typeof warning.charge === 'string' ? warning.charge : warning.charge.id;
+        const charge = await stripe.charges.retrieve(chargeId);
+        await cancelCustomerSubscriptions(charge.customer, `early fraud warning ${warning.id}`);
+        break;
+      }
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        console.warn(`Refund on charge ${charge.id} for customer ${charge.customer}: ${charge.amount_refunded} cents refunded`);
         break;
       }
       case 'customer.subscription.created':

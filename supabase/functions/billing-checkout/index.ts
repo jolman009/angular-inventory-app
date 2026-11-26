@@ -1,11 +1,13 @@
-import Stripe from 'npm:stripe@17.7.0';
+import Stripe from 'npm:stripe@23.2.0';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // Starts a Vaulted Pro purchase. Returns the address of Stripe's own payment page,
 // so card details are typed into Stripe and never pass through this app.
 //
 // Secrets this function needs (Supabase dashboard > Edge Functions > Secrets):
-//   STRIPE_SECRET_KEY     sk_test_... while testing, sk_live_... when you go live
+//   STRIPE_SECRET_KEY     a restricted key (rk_...) from a Stripe sandbox while testing; see supabase/BILLING_SETUP.md
+//   STRIPE_AUTOMATIC_TAX  optional: "on" to let Stripe Tax work out sales tax. Leave it off until you have
+//                         tax registrations in Stripe, because without them Stripe collects nothing.
 //   STRIPE_PRICE_MONTHLY  price_... for the $3.99 / month price
 //   STRIPE_PRICE_YEARLY   price_... for the $29.99 / year price
 //   APP_URL               where people return after paying, e.g. https://angular-inventory-app-red.vercel.app
@@ -33,6 +35,7 @@ Deno.serve(async req => {
     yearly: Deno.env.get('STRIPE_PRICE_YEARLY'),
   };
   const appUrl = (Deno.env.get('APP_URL') ?? '').replace(/\/+$/, '');
+  const automaticTax = Deno.env.get('STRIPE_AUTOMATIC_TAX') === 'on';
   if (!stripeKey || !prices.monthly || !prices.yearly || !appUrl) {
     console.error('Billing secrets are missing (STRIPE_SECRET_KEY, STRIPE_PRICE_MONTHLY, STRIPE_PRICE_YEARLY, APP_URL)');
     return json({ error: 'Upgrades are not set up yet.' }, 500);
@@ -85,6 +88,12 @@ Deno.serve(async req => {
       if (saveError) throw saveError;
     }
 
+    // Our table can lag a few seconds behind Stripe right after a payment, so ask Stripe too.
+    const live = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 });
+    if (live.data.some(sub => ['active', 'trialing', 'past_due'].includes(sub.status))) {
+      return json({ error: 'You already have Vaulted Pro.' }, 409);
+    }
+
     // 5. Stripe's hosted payment page.
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -93,6 +102,17 @@ Deno.serve(async req => {
       line_items: [{ price: prices[plan], quantity: 1 }],
       subscription_data: { metadata: { user_id: user.id } },
       allow_promotion_codes: true,
+      // Lets you compare checkout flows in the Stripe Dashboard.
+      integration_identifier: 'vaulted-pro-checkout-qkzmwvta',
+      // Sales tax. Prices are set up in Stripe as tax-inclusive, so people always pay the price shown.
+      // Stripe needs the buyer's address to know which tax applies, and saves it on their customer.
+      ...(automaticTax
+        ? {
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'required' as const,
+            customer_update: { address: 'auto' as const, name: 'auto' as const },
+          }
+        : {}),
       success_url: `${appUrl}/collection?panel=plans&checkout=success`,
       cancel_url: `${appUrl}/collection?panel=plans`,
     });
