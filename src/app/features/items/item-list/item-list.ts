@@ -19,6 +19,7 @@ import { CsvImport } from '../csv-import/csv-import';
 import { downloadCsv, itemsToCsv } from '../csv';
 import { ItemForm } from '../item-form/item-form';
 import { ItemStore } from '../item-store';
+import { Icon } from '../../../shared/icon';
 import {
   CardValuation,
   DETAIL_FIELDS,
@@ -42,9 +43,9 @@ const THEME_KEY = 'vaulted-theme';
 
 @Component({
   selector: 'app-item-list',
-  imports: [ItemForm, CsvImport, QuickCapture, CurrencyPipe, DecimalPipe, NgOptimizedImage, RouterLink],
+  imports: [ItemForm, CsvImport, QuickCapture, CurrencyPipe, DecimalPipe, NgOptimizedImage, RouterLink, Icon],
   templateUrl: './item-list.html',
-  styleUrl: './item-list.scss',
+  styleUrls: ['./item-list.scss', './item-list-items.scss', './item-list-panels.scss', './item-list-drawer.scss', './item-list-mobile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'onEscape()' },
 })

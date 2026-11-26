@@ -1,0 +1,253 @@
+/* Collection screen: item tiles (list and grid), empty and loading states. */
+
+/* ---- Items: list (default) and grid ---- */
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.items.grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-4);
+}
+
+.items li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.items li:not(.empty):not(.skeleton):hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  box-shadow: var(--shadow-lg);
+}
+
+.items.grid-view li:not(.empty):not(.skeleton):hover {
+  transform: translateY(-2px);
+}
+
+.items.grid-view li {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+
+.items li.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+}
+
+.main {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.items.grid-view .main {
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Photo area. In grid view it is a 4:3 frame; in list view a 56px square. */
+.media {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--mt, var(--primary)) 12%, var(--surface-subtle));
+  border-radius: var(--radius-sm);
+}
+
+.items.grid-view .media {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--mt, var(--muted));
+}
+
+.status-pill {
+  display: none;
+}
+
+.items.grid-view .status-pill {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  backdrop-filter: blur(6px);
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+}
+
+.items.grid-view .item-info {
+  padding: var(--space-3) var(--space-4) 0;
+}
+
+.item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.item-type {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.item-type app-icon {
+  color: var(--mt);
+}
+
+.price-tag {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-title {
+  font-size: var(--text-md);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  position: relative;
+  z-index: 1; /* above the stretched title button */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.items.grid-view .actions {
+  flex-wrap: nowrap;
+  margin-top: auto;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.actions select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+/* Empty and loading states */
+.items li.empty {
+  grid-column: 1 / -1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  border-style: dashed;
+  box-shadow: none;
+  color: var(--muted);
+  text-align: center;
+  cursor: default;
+}
+
+.items li.empty p {
+  max-width: 36rem;
+}
+
+.empty-icon {
+  display: inline-flex;
+  padding: var(--space-3);
+  background: var(--primary-soft);
+  border-radius: var(--radius-pill);
+  color: var(--primary-text);
+}
+
+.items li.skeleton {
+  cursor: default;
+}
+
+.items li.skeleton .media,
+.items li.skeleton .item-info span {
+  background: var(--surface-subtle);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.items li.skeleton .item-info {
+  padding-bottom: var(--space-4);
+}
+
+.items li.skeleton .item-info span {
+  display: block;
+  height: 0.875rem;
+  border-radius: 4px;
+}
+
+.items li.skeleton .item-info span:last-child {
+  width: 60%;
+}
+
+.items:not(.grid-view) li.skeleton .media {
+  border-radius: var(--radius-sm);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}

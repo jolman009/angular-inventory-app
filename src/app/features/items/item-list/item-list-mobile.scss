@@ -1,0 +1,178 @@
+/* Collection screen: tablet and phone layout, plus the stretched item title button. */
+
+/* ---- Tablet and phone ---- */
+
+@media (max-width: 980px) {
+  .dashboard,
+  .dashboard.has-drawer {
+    /* minmax(0, 1fr), not 1fr: lets the column shrink below its content
+       (the scrolling filter pills), which stops the page scrolling sideways. */
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Hide the tall desktop sidebar and header buttons on tablet & phone */
+  .sidebar,
+  .desktop-actions {
+    display: none !important;
+  }
+
+  .mobile-top-strip {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .mobile-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-pills {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 2px var(--space-4) var(--space-1);
+    scrollbar-width: none;
+  }
+
+  .mobile-pills::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-pills button {
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+
+  .mobile-pills button.active {
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border-color: var(--primary);
+    font-weight: 600;
+  }
+
+  .page {
+    padding: var(--space-4) var(--space-4) calc(6rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .drawer {
+    position: fixed;
+    inset: 0 0 calc(4.5rem + env(safe-area-inset-bottom)) auto;
+    z-index: 25;
+    width: min(100vw, 440px);
+    height: auto;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+
+  .bottom-nav-btn {
+    position: relative;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 52px;
+    padding: var(--space-1) 2px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: var(--text-xs);
+  }
+
+  .bottom-nav-btn:hover:not(:disabled) {
+    background: var(--surface-subtle);
+  }
+
+  .bottom-nav-btn.active {
+    color: var(--primary-text);
+    background: var(--primary-soft);
+  }
+
+  .bottom-nav-btn svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 22%;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--primary);
+    color: var(--primary-contrast);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-xs);
+    line-height: 18px;
+  }
+}
+
+/* ---- Drawer title & item open buttons (keyboard access) ---- */
+.drawer-header h2 {
+  margin: 0;
+  font: inherit;
+}
+
+.drawer-header h2:focus,
+.top h1:focus {
+  outline: none; /* focused by script to announce the panel; not an interactive control */
+}
+
+.item-open {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.item-open:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+  border: none;
+}
+
+/* The whole tile is clickable; stretch the title button over it so the tap area is large. */
+.item-open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.item-open:focus-visible {
+  outline: none;
+}
+
+.item-open:focus-visible::after {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
