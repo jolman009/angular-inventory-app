@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth-guard';
 import { BRAND } from './core/brand';
+import { unsavedChangesGuard } from './core/unsaved-changes-guard';
 
 export const routes: Routes = [
   {
@@ -26,6 +27,7 @@ export const routes: Routes = [
     path: 'collection',
     title: `My collection - ${BRAND.name}`,
     canActivate: [authGuard],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./features/items/item-list/item-list').then(m => m.ItemList),
   },
   {
