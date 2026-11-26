@@ -15,7 +15,7 @@
 }
 
 .update-banner button {
-  min-height: 36px;
+  min-height: var(--tap);
   background: var(--primary);
   color: var(--primary-contrast);
   border-color: var(--primary);

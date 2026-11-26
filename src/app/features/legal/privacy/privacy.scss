@@ -24,13 +24,16 @@
 }
 
 .signin-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
   color: var(--text);
   font-weight: 600;
   text-decoration: none;
 }
 
 .signin-link:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .hero-header {
@@ -47,7 +50,7 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 h1 {
@@ -63,11 +66,11 @@ h1 {
   max-width: 46rem;
   margin: 0 0 0.75rem;
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 
 .meta {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .highlights {
@@ -108,7 +111,7 @@ h1 {
   margin-top: 0.35rem;
   font-family: var(--font-slab);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 
 .legal-section ul,
@@ -121,7 +124,7 @@ h1 {
 }
 
 .legal-section a {
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -154,7 +157,7 @@ h1 {
   padding: 1rem 1.15rem;
   background: var(--surface-subtle);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .foot {
@@ -167,7 +170,7 @@ h1 {
   padding-top: 1.5rem;
   border-top: 1px solid var(--rule);
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .foot-links {
@@ -186,5 +189,5 @@ h1 {
 
 .foot-links a:hover,
 .foot-links a[aria-current='page'] {
-  color: var(--primary);
+  color: var(--primary-text);
 }

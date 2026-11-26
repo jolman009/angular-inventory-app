@@ -2,6 +2,7 @@ import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BRAND } from '../../../core/brand';
+import { Icon } from '../../../shared/icon';
 import { MEDIA_TYPE_LABELS, MEDIA_TYPES, MediaType } from '../../items/item.model';
 
 interface DemoCatalogCard {
@@ -60,7 +61,7 @@ const DEMO_CARDS: Record<MediaType, DemoCatalogCard> = {
 
 @Component({
   selector: 'app-landing',
-  imports: [RouterLink, NgOptimizedImage],
+  imports: [RouterLink, NgOptimizedImage, Icon],
   templateUrl: './landing.html',
   styleUrl: './landing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -24,13 +24,16 @@
 }
 
 .signin-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
   color: var(--text);
   font-weight: 600;
   text-decoration: none;
 }
 
 .signin-link:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 /* ---- Hero ---- */
@@ -52,7 +55,7 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 h1 {
@@ -68,7 +71,7 @@ h1 {
   max-width: 34rem;
   margin: 0 0 1.75rem;
   color: var(--muted);
-  font-size: 1.12rem;
+  font-size: var(--text-lg);
 }
 
 .hero-ctas {
@@ -96,11 +99,11 @@ h1 {
 }
 
 .type-tabs button {
-  min-height: 36px;
+  min-height: var(--tap);
   padding: 0 0.85rem;
   border: none;
   border-radius: 7px;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .type-tabs button.active {
@@ -175,6 +178,13 @@ h1 {
   border-top: 1px solid var(--rule);
 }
 
+.section-head h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .section-head {
   margin-bottom: 1.35rem;
 }
@@ -209,7 +219,7 @@ h2 {
   padding-top: 1.5rem;
   border-top: 1px solid var(--rule);
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .foot-links {
@@ -227,7 +237,7 @@ h2 {
 }
 
 .foot-links a:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 @media (max-width: 780px) {
