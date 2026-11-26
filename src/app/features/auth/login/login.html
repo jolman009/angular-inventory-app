@@ -8,9 +8,19 @@
   <form [formGroup]="form" (ngSubmit)="submit()">
     <div class="field">
       <label for="email">Email</label>
-      <input id="email" type="email" formControlName="email" autocomplete="email" />
+      <input
+        id="email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid"
+        [attr.aria-describedby]="form.controls.email.touched && form.controls.email.invalid ? 'email-error' : null"
+      />
       @if (form.controls.email.touched && form.controls.email.invalid) {
-      <small class="field-error">Password must be at least 10 characters.</small>      }
+        <small id="email-error" class="field-error">
+          {{ form.controls.email.hasError('required') ? 'Email is required.' : 'Enter a valid email address.' }}
+        </small>
+      }
     </div>
 
     <div class="field">
@@ -21,6 +31,8 @@
           [type]="showPassword() ? 'text' : 'password'"
           formControlName="password"
           [attr.autocomplete]="mode() === 'signin' ? 'current-password' : 'new-password'"
+          [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
+          [attr.aria-describedby]="mode() === 'signup' ? 'password-hint password-error' : 'password-error'"
         />
         <button
           type="button"
@@ -34,13 +46,13 @@
       </div>
 
       @if (mode() === 'signup') {
-        <small class="hint">Use at least {{ minPassword }} characters.</small>
+        <small id="password-hint" class="hint">Use at least {{ minPassword }} characters.</small>
       }
       @if (form.controls.password.touched && form.controls.password.hasError('required')) {
-        <small class="field-error">Password is required.</small>
+        <small id="password-error" class="field-error">Password is required.</small>
       }
       @if (mode() === 'signup' && form.controls.password.touched && form.controls.password.hasError('minlength')) {
-        <small class="field-error">Password must be at least {{ minPassword }} characters.</small>
+        <small id="password-error" class="field-error">Password must be at least {{ minPassword }} characters.</small>
       }
     </div>
 
@@ -53,10 +65,12 @@
             [type]="showPassword() ? 'text' : 'password'"
             formControlName="confirm"
             autocomplete="new-password"
+            [attr.aria-invalid]="form.controls.confirm.touched && form.hasError('mismatch')"
+            [attr.aria-describedby]="form.controls.confirm.touched && form.hasError('mismatch') ? 'confirm-error' : null"
           />
         </div>
         @if (form.controls.confirm.touched && form.hasError('mismatch')) {
-          <small class="field-error">Passwords don't match.</small>
+          <small id="confirm-error" class="field-error">Passwords don't match.</small>
         }
       </div>
     }

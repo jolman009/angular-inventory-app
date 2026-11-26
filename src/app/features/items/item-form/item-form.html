@@ -141,7 +141,7 @@
     <div class="photo-actions">
       <label class="file-button">
         {{ displayImage() ? 'Change photo' : 'Add photo' }}
-        <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
+        <input type="file" accept="image/*" class="visually-hidden" (change)="onFileChange($event)" />
       </label>
       @if (displayImage()) {
         <button type="button" (click)="removePhoto()">Remove</button>
@@ -152,6 +152,13 @@
       <small class="field-error">{{ imageError() }}</small>
     }
   </div>
+
+  @if (saveError(); as err) {
+    <p class="form-error" role="alert">Couldn't save. {{ err }} Your changes are still here, so you can try again.</p>
+  }
+  @if (lastAdded(); as title) {
+    <p class="form-success" role="status">Added “{{ title }}”. Fill in the next item, or press Done.</p>
+  }
 
   <div class="buttons">
     <button type="submit" [disabled]="saving()">

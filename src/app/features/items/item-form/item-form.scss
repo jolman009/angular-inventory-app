@@ -102,3 +102,21 @@ label {
 }
 
 .danger { color: var(--danger); }
+
+.form-error,
+.form-success {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+}
+
+.form-error {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
+}
+
+.form-success {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  color: var(--success);
+  font-weight: 600;
+}

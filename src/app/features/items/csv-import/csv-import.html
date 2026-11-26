@@ -8,7 +8,7 @@
   <div class="actions">
     <label class="file-button">
       Choose CSV file
-      <input type="file" accept=".csv,text/csv" (change)="onFile($event)" hidden />
+      <input type="file" accept=".csv,text/csv" class="visually-hidden" (change)="onFile($event)" />
     </label>
     <button type="button" (click)="done.emit()">Close</button>
   </div>
@@ -43,7 +43,10 @@
     </button>
   }
 
-  @if (imported() !== null) {
-    <p class="good">Imported {{ imported() }} items.</p>
+  @if (importError(); as err) {
+    <p class="bad" role="alert">{{ err }}</p>
+  }
+  @if (imported(); as count) {
+    <p class="good" role="status">Imported {{ count }} {{ count === 1 ? 'item' : 'items' }}.</p>
   }
 </section>

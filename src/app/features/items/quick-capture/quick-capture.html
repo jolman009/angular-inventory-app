@@ -21,17 +21,17 @@
   <div class="actions">
     <label class="shutter">
       Take photo
-      <input type="file" accept="image/*" capture="environment" hidden (change)="onFiles($event)" />
+      <input type="file" accept="image/*" capture="environment" class="visually-hidden" (change)="onFiles($event)" />
     </label>
     <label class="file-button">
       Choose photos
-      <input type="file" accept="image/*" multiple hidden (change)="onFiles($event)" />
+      <input type="file" accept="image/*" multiple class="visually-hidden" (change)="onFiles($event)" />
     </label>
     <button type="button" (click)="done.emit()">Done</button>
   </div>
 
   @if (shots().length) {
-    <p class="summary">
+    <p class="summary" role="status">
       <strong>{{ savedCount() }}</strong> saved
       @if (busy()) { <span class="muted">· Saving…</span> }
     </p>

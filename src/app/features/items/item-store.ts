@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { blobToBase64 } from '../../core/blob';
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { BRAND } from '../../core/brand';
 import { Supabase } from '../../core/supabase';
 import {
   CardPriceQuery,
@@ -15,6 +16,28 @@ import {
 } from './item.model';
 
 const BUCKET = 'item-images';
+
+/** Turns common raw Supabase/network errors into sentences a collector can act on. */
+export function friendlyError(message: string): string {
+  if (/failed to fetch|network ?error|load failed/i.test(message)) {
+    return "Can't reach the server. Check your connection and try again.";
+  }
+  if (/jwt|not authenticated|invalid claim|session/i.test(message)) {
+    return 'Your session has expired. Sign out and sign in again.';
+  }
+  if (/row-level security|permission denied/i.test(message)) {
+    return "You don't have permission to change this item.";
+  }
+  return message;
+}
+
+/** The text search looks through: the title plus the plain detail values (not the saved eBay valuation). */
+function searchText(item: Item): string {
+  const values = Object.entries(item.details)
+    .filter(([key, value]) => key !== 'valuation' && (typeof value === 'string' || typeof value === 'number'))
+    .map(([, value]) => value);
+  return `${item.title} ${values.join(' ')}`.toLowerCase();
+}
 
 @Injectable({ providedIn: 'root' })
 export class ItemStore {
@@ -54,7 +77,7 @@ export class ItemStore {
       i =>
         (type === 'all' || i.type === type) &&
         (status === 'all' || i.status === status) &&
-        (!q || `${i.title} ${Object.values(i.details).join(' ')}`.toLowerCase().includes(q)),
+        (!q || searchText(i).includes(q)),
     );
 
     return this.sortItems(matches, this.sortBy());
@@ -118,12 +141,19 @@ export class ItemStore {
     return counts;
   });
 
-  readonly totalSpent = computed(() =>
-    this.committed().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
+  /** Items the user actually has right now: owned, for sale, or lent out. Wishlist and sold are left out. */
+  readonly held = computed(() =>
+    this.committed().filter(i => i.status !== 'wishlist' && i.status !== 'sold'),
   );
 
+  /** What the user paid for the items they currently hold. */
+  readonly totalSpent = computed(() =>
+    this.held().reduce((sum, i) => sum + (i.purchase_price ?? 0), 0),
+  );
+
+  /** Estimated value of the items the user currently holds (eBay median for cards, else price paid). */
   readonly totalEstimatedValue = computed(() =>
-    this.committed().reduce(
+    this.held().reduce(
       (sum, i) => sum + (getCardValuation(i.details)?.medianPrice ?? i.purchase_price ?? 0),
       0,
     ),
@@ -140,7 +170,7 @@ export class ItemStore {
   readonly pricingProgress = signal<{ current: number; total: number } | null>(null);
 
   readonly pricedCount = computed(
-    () => this.committed().filter(i => (i.purchase_price ?? 0) > 0).length,
+    () => this.held().filter(i => (i.purchase_price ?? 0) > 0).length,
   );
 
   readonly averageSpent = computed(() => {
@@ -171,7 +201,7 @@ export class ItemStore {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) this.error.set(error.message);
+    if (error) this.error.set(friendlyError(error.message));
     else {
       this.items.set(data as Item[]);
       await this.signImages();
@@ -185,7 +215,7 @@ export class ItemStore {
     const { data, error } = await this.db.from('items').insert(item).select().single();
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => [data as Item, ...list]);
@@ -333,7 +363,7 @@ export class ItemStore {
       const { data, error } = await this.db.from('items').insert(chunk).select();
 
       if (error) {
-        this.error.set(`Saved ${added} of ${rows.length} rows, then stopped: ${error.message}`);
+        this.error.set(`Saved ${added} of ${rows.length} rows, then stopped. ${friendlyError(error.message)}`);
         break;
       }
       this.items.update(list => [...(data as Item[]), ...list]);
@@ -354,7 +384,7 @@ export class ItemStore {
       .single();
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => list.map(i => (i.id === id ? (data as Item) : i)));
@@ -373,7 +403,7 @@ export class ItemStore {
     const { error } = await this.db.from('items').update({ status }).eq('id', id);
     if (error) {
       this.items.set(previous);
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
     }
   }
 
@@ -382,7 +412,7 @@ export class ItemStore {
 
     const { error } = await this.db.from('items').delete().eq('id', id);
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return;
     }
     this.items.update(list => list.filter(i => i.id !== id));
@@ -390,37 +420,57 @@ export class ItemStore {
     if (path) await this.deleteFile(path);
   }
 
-  /** Permanently deletes all stored items, drafts, and uploaded images for the current user, then attempts account deletion. */
+  /**
+   * Permanently deletes the user's photos, then asks the database to delete their items and their
+   * login in one step (the `delete_user` function in supabase/migrations). If that step fails,
+   * nothing in the collection is removed, so the user is never left half-deleted.
+   */
   async deleteAccountAndData(): Promise<boolean> {
     this.error.set(null);
 
-    const ids = this.items().map(i => i.id);
-    const paths = this.items()
-      .map(i => i.image_path)
-      .filter((p): p is string => !!p);
-
-    if (ids.length > 0) {
-      const { error } = await this.db.from('items').delete().in('id', ids);
-      if (error) {
-        this.error.set(error.message);
-        return false;
+    // 1. Photos live in Storage, which the database function can't clean up, so remove them first.
+    //    Listing the user's folder also catches photos for items that were never loaded.
+    const { data } = await this.db.auth.getSession();
+    const uid = data.session?.user.id;
+    if (uid) {
+      const paths = await this.listUserPhotos(uid);
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await this.db.storage.from(BUCKET).remove(paths.slice(i, i + 100));
+        if (error) console.warn('Some photos could not be deleted', error);
       }
     }
 
-    if (paths.length > 0) {
-      await this.db.storage.from(BUCKET).remove(paths);
-    }
-
-    try {
-      await this.db.rpc('delete_user');
-    } catch {
-      // ignore if RPC is not configured
+    // 2. Items + login, in one transaction on the server.
+    //    rpc() reports failure in its result instead of throwing, so the result must be checked.
+    const { error: rpcError } = await this.db.rpc('delete_user');
+    if (rpcError) {
+      console.error('delete_user failed', rpcError);
+      this.error.set(
+        `We couldn't delete your account, so your items are still saved. Please try again, or email ${BRAND.supportEmail} and we'll do it for you.`,
+      );
+      await this.signImages(); // photos may be gone now; refresh what we can show
+      return false;
     }
 
     this.items.set([]);
     this.imageUrls.set({});
     this.selectedId.set(null);
     return true;
+  }
+
+  /** Every file path in the user's photo folder (`<uid>/…`). */
+  private async listUserPhotos(uid: string): Promise<string[]> {
+    const paths: string[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await this.db.storage
+        .from(BUCKET)
+        .list(uid, { limit: pageSize, offset });
+      if (error || !data) break;
+      paths.push(...data.filter(f => f.id).map(f => `${uid}/${f.name}`));
+      if (data.length < pageSize) break;
+    }
+    return paths;
   }
 
   // ---- image actions ----
@@ -439,7 +489,7 @@ export class ItemStore {
       .upload(path, blob, { contentType: 'image/jpeg' });
 
     if (error) {
-      this.error.set(error.message);
+      this.error.set(friendlyError(error.message));
       return null;
     }
     return path;
