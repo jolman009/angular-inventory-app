@@ -1,4 +1,4 @@
-import { CurrencyPipe, DecimalPipe, NgOptimizedImage } from '@angular/common';
+import { CurrencyPipe, DecimalPipe, Location, NgOptimizedImage } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,11 +10,14 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { BRAND } from '../../../core/brand';
 import { Supabase } from '../../../core/supabase';
+import { HasUnsavedChanges } from '../../../core/unsaved-changes-guard';
 import { CsvImport } from '../csv-import/csv-import';
 import { downloadCsv, itemsToCsv } from '../csv';
 import { ItemForm } from '../item-form/item-form';
@@ -35,6 +38,13 @@ import {
   getCardValuation,
 } from '../item.model';
 import { QuickCapture } from '../quick-capture/quick-capture';
+import {
+  CollectionUrlState,
+  hasDrawer,
+  paramsKey,
+  paramsToState,
+  stateToParams,
+} from './collection-url';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -46,12 +56,17 @@ const THEME_KEY = 'vaulted-theme';
   templateUrl: './item-list.html',
   styleUrl: './item-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'onEscape()' },
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+    '(window:beforeunload)': 'onBeforeUnload($event)',
+  },
 })
-export class ItemList implements OnInit {
+export class ItemList implements OnInit, HasUnsavedChanges {
   protected supabase = inject(Supabase);
   protected store = inject(ItemStore);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
   private injector = inject(Injector);
 
   // Elements we move keyboard focus to
@@ -121,7 +136,53 @@ export class ItemList implements OnInit {
   private drawerReturnFocus: HTMLElement | null = null;
   private popupReturnFocus: HTMLElement | null = null;
 
+  // ---- address bar sync ----
+  // The address bar mirrors the drawer and filters (see collection-url.ts).
+  // Opening the drawer adds a history entry, so the phone's Back button closes it.
+  /** The params currently in the address bar, as text. */
+  private urlKey = '';
+  /** Whether the address bar currently has the drawer open. */
+  private urlOpen = false;
+  /** True when the history entry before this one is this page with the drawer closed. */
+  private drawerPushed = false;
+  /** Set while we step back in history to close the drawer. */
+  private closingViaBack = false;
+
+  /** The page's state as the address bar should show it. */
+  private readonly urlState = computed<CollectionUrlState>(() => {
+    const base = {
+      q: this.store.search().trim(),
+      type: this.store.typeFilter(),
+      status: this.store.statusFilter(),
+      sort: this.store.sortBy(),
+    };
+    const editing = this.editingId();
+    if (this.adding()) return { ...base, panel: 'add', item: null };
+    if (editing) return { ...base, panel: this.reviewing() ? 'review' : 'edit', item: editing };
+    if (this.captureOpen()) return { ...base, panel: 'capture', item: null };
+    if (this.importOpen()) return { ...base, panel: 'import', item: null };
+    if (this.pricingOpen()) return { ...base, panel: 'plans', item: null };
+    return { ...base, panel: null, item: this.store.selectedId() };
+  });
+
   constructor() {
+    // Restore the view from the address bar (a reload or a shared link)...
+    const initial = this.route.snapshot.queryParams;
+    this.urlKey = paramsKey(initial);
+    this.urlOpen = hasDrawer(paramsToState(initial));
+    this.applyUrlState(paramsToState(initial), true);
+
+    // ...follow it when it changes (Back, Forward)...
+    this.route.queryParams
+      .pipe(takeUntilDestroyed())
+      .subscribe(params => this.onUrlChange(params));
+
+    // ...and keep it up to date as the user opens panels and filters.
+    effect(() => {
+      const state = this.urlState();
+      untracked(() => this.writeUrl(state));
+    });
+
     try {
       const query = window.matchMedia('(max-width: 980px)');
       this.isCompact.set(query.matches);
@@ -151,6 +212,99 @@ export class ItemList implements OnInit {
         { injector: this.injector },
       );
     });
+  }
+
+  /** Pushes the page state into the address bar. */
+  private writeUrl(state: CollectionUrlState) {
+    const params = stateToParams(state);
+    const key = paramsKey(params);
+    if (key === this.urlKey) return;
+
+    const wasOpen = this.urlOpen;
+    const isOpen = hasDrawer(state);
+
+    if (wasOpen && !isOpen && this.drawerPushed) {
+      // Step back to the entry we came from instead of adding another one,
+      // so the next Back press leaves the page as expected.
+      this.drawerPushed = false;
+      this.closingViaBack = true;
+      this.location.back();
+      return;
+    }
+
+    const push = !wasOpen && isOpen;
+    if (push) this.drawerPushed = true;
+    this.urlKey = key;
+    this.urlOpen = isOpen;
+    this.router.navigate([], { relativeTo: this.route, queryParams: params, replaceUrl: !push });
+  }
+
+  /** The address bar changed: Back, Forward, or our own update. */
+  private onUrlChange(params: Params) {
+    const key = paramsKey(params);
+    if (key === this.urlKey && !this.closingViaBack) return; // our own update
+    this.urlKey = key;
+    let next = paramsToState(params);
+    this.urlOpen = hasDrawer(next);
+    if (this.closingViaBack) {
+      // We stepped back only to close the drawer. Keep the filters the user has now,
+      // not the older ones saved in that history entry.
+      this.closingViaBack = false;
+      const now = this.urlState();
+      next = { ...next, q: now.q, type: now.type, status: now.status, sort: now.sort };
+    } else if (this.formOpen() && this.itemForm()?.hasUnsavedChanges()) {
+      const now = this.urlState();
+      const leavingForm = next.panel !== now.panel || next.item !== now.item;
+      if (leavingForm && !confirm('Discard your unsaved changes?')) {
+        // Stay: put the form's entry back into history.
+        const keep = stateToParams(now);
+        this.urlKey = paramsKey(keep);
+        this.urlOpen = true;
+        this.drawerPushed = true;
+        this.router.navigate([], { relativeTo: this.route, queryParams: keep });
+        return;
+      }
+    }
+
+    this.drawerPushed = hasDrawer(next);
+    this.applyUrlState(next, false);
+    // If we kept newer filters above, make the address bar show them.
+    this.writeUrl(this.urlState());
+  }
+
+  /** Sets filters and the drawer to match a URL state. */
+  private applyUrlState(s: CollectionUrlState, initial: boolean) {
+    this.store.search.set(s.q);
+    this.store.typeFilter.set(s.type);
+    this.store.statusFilter.set(s.status);
+    this.store.sortBy.set(s.sort);
+
+    const now = this.urlState();
+    if (!initial && now.panel === s.panel && now.item === s.item) return;
+
+    this.adding.set(s.panel === 'add');
+    this.editingId.set(s.panel === 'edit' || s.panel === 'review' ? s.item : null);
+    this.reviewing.set(s.panel === 'review');
+    this.captureOpen.set(s.panel === 'capture');
+    this.importOpen.set(s.panel === 'import');
+    this.pricingOpen.set(s.panel === 'plans');
+    if (s.panel === null) this.store.selectedId.set(s.item);
+    if (s.panel === null && s.item === null) this.refreshNotice.set(null);
+  }
+
+  /** True when the item form holds edits that haven't been saved. */
+  private hasUnsavedForm(): boolean {
+    return this.formOpen() && !!this.itemForm()?.hasUnsavedChanges();
+  }
+
+  /** Used by the route guard before leaving this page. */
+  canLeave(): boolean {
+    return !this.hasUnsavedForm() || confirm('Discard your unsaved changes?');
+  }
+
+  /** Closing or reloading the tab with unsaved edits: let the browser ask first. */
+  onBeforeUnload(e: BeforeUnloadEvent) {
+    if (this.hasUnsavedForm()) e.preventDefault();
   }
 
   /** Remembers the focused control before the drawer opens, so closing it can return there. */
@@ -232,9 +386,7 @@ export class ItemList implements OnInit {
 
   /** Closes the drawer, first asking before throwing away unsaved form edits. */
   requestCloseDrawer() {
-    if (this.formOpen() && this.itemForm()?.hasUnsavedChanges() && !confirm('Discard your unsaved changes?')) {
-      return;
-    }
+    if (this.hasUnsavedForm() && !confirm('Discard your unsaved changes?')) return;
     this.closeDrawer();
   }
 
