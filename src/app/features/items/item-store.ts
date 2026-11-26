@@ -2,6 +2,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { blobToBase64 } from '../../core/blob';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { BRAND } from '../../core/brand';
+import { PLAN_LIMITS } from '../../core/plan-store';
 import { Supabase } from '../../core/supabase';
 import {
   CardPriceQuery,
@@ -28,6 +29,9 @@ export function friendlyError(message: string): string {
   }
   if (/jwt|not authenticated|invalid claim|session/i.test(message)) {
     return 'Your session has expired. Sign out and sign in again.';
+  }
+  if (/ITEM_LIMIT/.test(message)) {
+    return `The free plan holds up to ${PLAN_LIMITS.freeItems} items. Upgrade to ${BRAND.name} Pro to add more; nothing you've saved is affected.`;
   }
   if (/row-level security|permission denied/i.test(message)) {
     return "You don't have permission to change this item.";

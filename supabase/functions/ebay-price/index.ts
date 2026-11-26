@@ -94,6 +94,16 @@ Deno.serve(async req => {
   const { data: auth, error: authError } = await admin.auth.getUser(token);
   if (authError || !auth.user) return json({ error: 'Please sign in again.' }, 401);
 
+  // eBay lookups are a Vaulted Pro feature.
+  const { data: isPro, error: planError } = await admin.rpc('is_pro', { p_user: auth.user.id });
+  if (planError) {
+    console.error('is_pro failed', planError);
+    return json({ error: 'Could not check your plan. Try again.' }, 500);
+  }
+  if (!isPro) {
+    return json({ error: 'eBay price estimates are part of Vaulted Pro.', code: 'upgrade' }, 403);
+  }
+
   // 2. Parse card details
   let payload: Record<string, unknown>;
   try {

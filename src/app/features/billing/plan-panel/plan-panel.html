@@ -1,0 +1,105 @@
+<section class="plans" aria-label="Membership plans">
+  @if (plan.justPaid()) {
+    <p class="notice success" role="status">
+      @if (plan.isPro()) {
+        Payment received. Welcome to {{ brand.name }} Pro!
+      } @else {
+        Payment received. Turning on Pro, this can take a few seconds…
+      }
+    </p>
+  }
+
+  @if (plan.paymentProblem()) {
+    <p class="notice warning" role="alert">
+      Your last payment didn't go through. Stripe will try again. Update your card under Manage billing to keep Pro.
+    </p>
+  }
+
+  @if (plan.error()) {
+    <p class="notice danger" role="alert">{{ plan.error() }}</p>
+  }
+
+  @if (plan.isPro()) {
+    <article class="plan-card pro current">
+      <span class="c-badge">Current plan</span>
+      <h3>{{ brand.name }} Pro</h3>
+      @if (plan.subscription(); as sub) {
+        <p class="muted">
+          @if (sub.plan) {
+            Billed {{ sub.plan }}.
+          }
+          @if (periodEnd(); as end) {
+            {{ renewalLabel() }} {{ end }}.
+          }
+        </p>
+      }
+      <ul class="plan-list">
+        <li>Unlimited items</li>
+        <li>{{ limits.proScansPerDay }} photo scans a day</li>
+        <li>eBay price estimates for cards</li>
+        <li>CSV import and export</li>
+      </ul>
+      <button type="button" class="btn-primary" [disabled]="plan.redirecting()" (click)="plan.openBillingPortal()">
+        {{ plan.redirecting() ? 'Opening Stripe…' : 'Manage billing' }}
+      </button>
+      <small class="muted">Change your card, switch monthly or yearly, see invoices, or cancel.</small>
+    </article>
+  } @else {
+    <article class="plan-card">
+      <span class="c-badge">Current plan</span>
+      <h3>Free</h3>
+      <div class="usage">
+        <div class="usage-row">
+          <span>Items saved</span>
+          <span class="usage-count">{{ itemCount() }} of {{ limits.freeItems }}</span>
+        </div>
+        <div
+          class="meter"
+          role="progressbar"
+          aria-label="Items saved on the free plan"
+          [attr.aria-valuenow]="itemCount()"
+          aria-valuemin="0"
+          [attr.aria-valuemax]="limits.freeItems"
+        >
+          <span [style.width.%]="usedPercent()" [class.full]="usedPercent() >= 100"></span>
+        </div>
+      </div>
+      <ul class="plan-list muted">
+        <li>Up to {{ limits.freeItems }} items</li>
+        <li>{{ limits.freeScansPerDay }} photo scans a day</li>
+        <li>Collection stats</li>
+        <li>CSV import and export</li>
+      </ul>
+    </article>
+
+    <article class="plan-card pro">
+      <h3>{{ brand.name }} Pro</h3>
+      <ul class="plan-list">
+        <li>Unlimited items</li>
+        <li>{{ limits.proScansPerDay }} photo scans a day</li>
+        <li>eBay price estimates for cards</li>
+        <li>Everything in Free</li>
+      </ul>
+
+      <div class="price-options">
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="plan.redirecting()"
+          (click)="plan.startCheckout('yearly')"
+        >
+          <span>{{ prices.yearly.amount | currency }} / {{ prices.yearly.per }}</span>
+          <span class="save">Save {{ yearlySavingPercent }}%</span>
+        </button>
+        <button type="button" [disabled]="plan.redirecting()" (click)="plan.startCheckout('monthly')">
+          {{ prices.monthly.amount | currency }} / {{ prices.monthly.per }}
+        </button>
+      </div>
+      @if (plan.redirecting()) {
+        <small class="muted" role="status">Opening Stripe's secure payment page…</small>
+      } @else {
+        <small class="muted">Payments are handled by Stripe. Cancel anytime from Manage billing.</small>
+      }
+    </article>
+  }
+</section>

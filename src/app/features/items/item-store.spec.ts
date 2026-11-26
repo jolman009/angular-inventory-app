@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
 import { Supabase } from '../../core/supabase';
-import { ItemStore } from './item-store';
+import { ItemStore, friendlyError } from './item-store';
 
 describe('ItemStore', () => {
   let service: ItemStore;
@@ -284,5 +284,14 @@ describe('ItemStore', () => {
     expect(service.items()).toEqual([]);
     expect(service.error()).toContain("Can't reach the server");
     expect(service.loading()).toBe(false);
+  });
+});
+
+describe('friendlyError for the free plan limit', () => {
+  it('explains the item limit instead of showing the database message', () => {
+    const message = friendlyError('ITEM_LIMIT: The free plan holds up to 100 items.');
+    expect(message).toContain('free plan holds up to 100 items');
+    expect(message).toContain('Pro');
+    expect(message).not.toContain('ITEM_LIMIT');
   });
 });

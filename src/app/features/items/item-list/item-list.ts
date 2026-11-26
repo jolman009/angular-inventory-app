@@ -16,7 +16,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { BRAND } from '../../../core/brand';
+import { PLAN_LIMITS, PlanStore } from '../../../core/plan-store';
 import { Supabase } from '../../../core/supabase';
+import { PlanPanel } from '../../billing/plan-panel/plan-panel';
 import { HasUnsavedChanges } from '../../../core/unsaved-changes-guard';
 import { CsvImport } from '../csv-import/csv-import';
 import { downloadCsv, itemsToCsv } from '../csv';
@@ -53,7 +55,7 @@ const THEME_KEY = 'vaulted-theme';
 
 @Component({
   selector: 'app-item-list',
-  imports: [ItemForm, CsvImport, QuickCapture, CurrencyPipe, DecimalPipe, NgOptimizedImage, RouterLink, Icon],
+  imports: [ItemForm, CsvImport, QuickCapture, PlanPanel, CurrencyPipe, DecimalPipe, NgOptimizedImage, RouterLink, Icon],
   templateUrl: './item-list.html',
   styleUrls: ['./item-list.scss', './item-list-items.scss', './item-list-panels.scss', './item-list-drawer.scss', './item-list-mobile.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,6 +67,7 @@ const THEME_KEY = 'vaulted-theme';
 export class ItemList implements OnInit, HasUnsavedChanges {
   protected supabase = inject(Supabase);
   protected store = inject(ItemStore);
+  protected plan = inject(PlanStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private location = inject(Location);
@@ -98,6 +101,11 @@ export class ItemList implements OnInit, HasUnsavedChanges {
   protected readonly reviewing = signal(false);
   protected readonly activePopup = signal<'data' | 'profile' | null>(null);
   protected readonly theme = signal<ThemeMode>('system');
+
+  /** Free plan is full (drafts count too, as they do on the server). */
+  protected readonly atFreeLimit = computed(
+    () => this.plan.loaded() && !this.plan.isPro() && this.store.items().length >= PLAN_LIMITS.freeItems,
+  );
 
   // eBay valuation state for existing cards
   protected readonly refreshingCardId = signal<string | null>(null);
@@ -520,6 +528,10 @@ export class ItemList implements OnInit, HasUnsavedChanges {
   }
 
   async refreshSingleCard(item: Item) {
+    if (!this.plan.isPro()) {
+      this.openPricing();
+      return;
+    }
     this.refreshingCardId.set(item.id);
     this.refreshNotice.set(null);
     const { valuation, notice } = await this.store.refreshCardEstimate(item);
@@ -531,6 +543,10 @@ export class ItemList implements OnInit, HasUnsavedChanges {
 
   async refreshMissingCards() {
     this.closePopup();
+    if (!this.plan.isPro()) {
+      this.openPricing();
+      return;
+    }
     await this.store.refreshAllCardEstimates(true);
   }
 
@@ -590,8 +606,9 @@ export class ItemList implements OnInit, HasUnsavedChanges {
 
   async deleteAccount() {
     this.closePopup();
+    const pro = this.plan.isPro() ? ` This also cancels your ${BRAND.name} Pro subscription right away.` : '';
     const confirmed = confirm(
-      'Permanently delete your account along with all stored collection items and uploaded photos? This action cannot be undone.',
+      `Permanently delete your account along with all stored collection items and uploaded photos?${pro} This action cannot be undone.`,
     );
     if (!confirmed) return;
 

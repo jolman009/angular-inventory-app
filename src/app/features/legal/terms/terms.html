@@ -115,10 +115,25 @@
         </ul>
       </section>
 
+      <section class="legal-section" id="paid-plans" aria-labelledby="billing-heading">
+        <h2 id="billing-heading">5. {{ brand.name }} Pro Subscriptions</h2>
+        <p>
+          {{ brand.name }} is free to use with limits. {{ brand.name }} Pro is an optional paid
+          subscription, billed monthly or yearly through Stripe. It renews automatically until you
+          cancel. You can cancel anytime under <strong>Manage billing</strong>; Pro stays active
+          until the end of the period you've paid for. If you go back to the free plan, nothing you
+          saved is deleted, but you can't add items beyond the free limit.
+        </p>
+        <!-- PLACEHOLDER: replace this paragraph with your own refund policy before taking real payments. -->
+        <p class="placeholder-note">
+          <strong>[Placeholder: refund policy to be written by the site owner.]</strong>
+        </p>
+      </section>
+
       <section class="legal-section deletion-callout" id="account-deletion" aria-labelledby="termination-heading">
         <div class="callout-header">
           <span class="c-badge">Account Closure &amp; Erasure</span>
-          <h2 id="termination-heading">5. Account Termination and Stored Data Deletion</h2>
+          <h2 id="termination-heading">6. Account Termination and Stored Data Deletion</h2>
         </div>
         <p>
           You may stop using {{ brand.name }} and delete your account along with all stored data at
@@ -130,8 +145,8 @@
             <strong>In-App Deletion:</strong> Sign in to
             <a routerLink="/collection">My Collection</a> and click
             <strong>Delete account &amp; data</strong> at the bottom of the desktop sidebar or
-            inside the mobile <strong>Profile</strong> menu. Confirming this action immediately
-            deletes all of your cataloged items, drafts, valuations, and uploaded photos from cloud
+            inside the mobile <strong>Profile</strong> menu. Confirming this action cancels any
+            {{ brand.name }} Pro subscription and immediately deletes all of your cataloged items, drafts, valuations, and uploaded photos from cloud
             storage, clears local browser preferences, and signs you out.
           </li>
           <li>
@@ -158,7 +173,7 @@
       </section>
 
       <section class="legal-section" aria-labelledby="liability-heading">
-        <h2 id="liability-heading">6. Limitation of Liability &amp; Contact</h2>
+        <h2 id="liability-heading">7. Limitation of Liability &amp; Contact</h2>
         <p>
           {{ brand.name }} is provided "as is" and "as available" without warranties of any kind,
           express or implied. To the fullest extent permitted by law, {{ brand.name }} shall not be

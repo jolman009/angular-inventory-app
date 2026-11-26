@@ -93,7 +93,7 @@
         </div>
         <button type="button" class="btn-subtle" (click)="openPricing()">
           <app-icon name="sparkle" [size]="18" />
-          Upgrade Membership
+          {{ plan.isPro() ? brand.name + ' Pro: billing' : 'Upgrade to Pro' }}
         </button>
       </div>
       <p class="user-email muted" [title]="supabase.session()?.user?.email ?? ''">
@@ -187,6 +187,16 @@
         </button>
       </div>
     </header>
+
+    @if (atFreeLimit()) {
+      <div class="limit-banner" role="status">
+        <p>
+          You've saved {{ store.items().length }} items, the most the free plan holds. Your items are safe;
+          upgrade to {{ brand.name }} Pro to add more.
+        </p>
+        <button type="button" class="btn-primary" (click)="openPricing()">See Pro</button>
+      </div>
+    }
 
     <section class="stats c-widget-grid" aria-label="Collection summary">
       <article class="c-stat-card" style="--stat-accent: var(--mt-card)">
@@ -485,34 +495,7 @@
       } @else if (captureOpen()) {
         <app-quick-capture (done)="captureOpen.set(false)" (review)="startReview()" />
       } @else if (pricingOpen()) {
-        <section class="pricing-panel" aria-label="Membership plans">
-          <article class="plan-card">
-            <span class="c-badge">Current Plan</span>
-            <h3>Collector (Free)</h3>
-            <div class="plan-price">$0 <span class="muted small">/ forever</span></div>
-            <ul class="plan-list muted">
-              <li>Unlimited cards, books, games &amp; records</li>
-              <li>Up to 50 Gemini AI photo scans per day</li>
-              <li>On-demand eBay median card estimates</li>
-              <li>CSV batch import &amp; backup export</li>
-            </ul>
-          </article>
-
-          <article class="plan-card pro">
-            <span class="c-badge">Coming Soon</span>
-            <h3>{{ brand.name }} Pro</h3>
-            <div class="plan-price">$6 <span class="muted small">/ month</span></div>
-            <ul class="plan-list">
-              <li>Unlimited Gemini Vision batch photo scanning</li>
-              <li>Automated weekly eBay portfolio re-valuation &amp; price alerts</li>
-              <li>Printable insurance &amp; appraisal PDF reports</li>
-              <li>Custom collection categories &amp; shared family vaults</li>
-            </ul>
-            <button type="button" class="btn-primary" disabled>
-              Pro Waitlist Opening Soon
-            </button>
-          </article>
-        </section>
+        <app-plan-panel [itemCount]="store.items().length" />
       } @else if (inspectingItem(); as selected) {
         <div class="inspector">
           @if (selected.image_path && store.imageUrls()[selected.image_path]; as url) {
@@ -540,7 +523,9 @@
                   {{
                     refreshingCardId() === selected.id
                       ? 'Checking…'
-                      : cardValuation(selected)
+                      : !plan.isPro()
+                        ? 'Unlock with Pro'
+                        : cardValuation(selected)
                         ? 'Refresh'
                         : 'Get estimate'
                   }}
@@ -583,7 +568,11 @@
                 </div>
               } @else {
                 <p class="muted small">
+                  @if (plan.isPro()) {
                   No eBay estimate saved yet. Click "Get estimate" to calculate median value.
+                } @else {
+                  eBay price estimates are part of {{ brand.name }} Pro.
+                }
                 </p>
               }
             </section>
@@ -703,7 +692,7 @@
       </div>
 
       <button type="button" class="popup-item" (click)="openPricing()">
-        Upgrade Membership / Pricing
+        {{ plan.isPro() ? brand.name + ' Pro: billing' : 'Upgrade to Pro' }}
       </button>
 
       @if (store.drafts().length > 0) {

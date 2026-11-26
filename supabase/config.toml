@@ -444,3 +444,24 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/delete-account/deno.json"
 entrypoint = "./functions/delete-account/index.ts"
+
+# Vaulted Pro billing. Each function checks the caller itself:
+# billing-checkout and billing-portal read the user's login token,
+# stripe-webhook checks Stripe's signature (Stripe can't send a Supabase login).
+[functions.billing-checkout]
+enabled = true
+verify_jwt = false
+import_map = "./functions/billing-checkout/deno.json"
+entrypoint = "./functions/billing-checkout/index.ts"
+
+[functions.billing-portal]
+enabled = true
+verify_jwt = false
+import_map = "./functions/billing-portal/deno.json"
+entrypoint = "./functions/billing-portal/index.ts"
+
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/stripe-webhook/deno.json"
+entrypoint = "./functions/stripe-webhook/index.ts"
