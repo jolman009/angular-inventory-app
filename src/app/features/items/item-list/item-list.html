@@ -7,12 +7,13 @@
       </a>
     </div>
 
-    <nav class="facet-group" aria-label="Media categories">
-      <span class="facet-heading">Categories</span>
+    <div class="facet-group" role="group" aria-labelledby="facet-categories">
+      <span class="facet-heading" id="facet-categories">Categories</span>
       <button
         type="button"
         class="facet-btn"
         [class.active]="store.typeFilter() === 'all'"
+        [attr.aria-pressed]="store.typeFilter() === 'all'"
         (click)="store.typeFilter.set('all')"
       >
         <span>All items</span>
@@ -23,20 +24,22 @@
           type="button"
           class="facet-btn"
           [class.active]="store.typeFilter() === t"
+          [attr.aria-pressed]="store.typeFilter() === t"
           (click)="store.typeFilter.set(t)"
         >
           <span>{{ typeLabels[t] }}</span>
           <span class="facet-count">{{ store.countsByType()[t] ?? 0 }}</span>
         </button>
       }
-    </nav>
+    </div>
 
-    <nav class="facet-group" aria-label="Item status filters">
-      <span class="facet-heading">Status</span>
+    <div class="facet-group" role="group" aria-labelledby="facet-status">
+      <span class="facet-heading" id="facet-status">Status</span>
       <button
         type="button"
         class="facet-btn"
         [class.active]="store.statusFilter() === 'all'"
+        [attr.aria-pressed]="store.statusFilter() === 'all'"
         (click)="store.statusFilter.set('all')"
       >
         <span>All statuses</span>
@@ -48,6 +51,7 @@
           class="facet-btn"
           [attr.data-status]="s"
           [class.active]="store.statusFilter() === s"
+          [attr.aria-pressed]="store.statusFilter() === s"
           (click)="store.statusFilter.set(s)"
         >
           <span class="facet-label">
@@ -57,7 +61,7 @@
           <span class="facet-count">{{ store.countsByStatus()[s] ?? 0 }}</span>
         </button>
       }
-    </nav>
+    </div>
 
     <div class="sidebar-footer">
       <div class="sidebar-actions">
@@ -65,6 +69,7 @@
           <button
             type="button"
             [class.active]="theme() === 'system'"
+            [attr.aria-pressed]="theme() === 'system'"
             (click)="setTheme('system')"
           >
             Auto
@@ -72,6 +77,7 @@
           <button
             type="button"
             [class.active]="theme() === 'light'"
+            [attr.aria-pressed]="theme() === 'light'"
             (click)="setTheme('light')"
           >
             Light
@@ -79,6 +85,7 @@
           <button
             type="button"
             [class.active]="theme() === 'dark'"
+            [attr.aria-pressed]="theme() === 'dark'"
             (click)="setTheme('dark')"
           >
             Dark
@@ -100,7 +107,7 @@
     </div>
   </aside>
 
-  <main class="page">
+  <main class="page" [inert]="drawerOpen() && isCompact()">
     <div class="mobile-top-strip">
       <div class="mobile-brand-row">
         <a class="brand" routerLink="/collection">
@@ -110,11 +117,10 @@
         <span class="c-badge">{{ store.committed().length }} items</span>
       </div>
 
-      <div class="mobile-pills" role="tablist" aria-label="Quick category filter">
+      <div class="mobile-pills" role="group" aria-label="Quick category filter">
         <button
           type="button"
-          role="tab"
-          [attr.aria-selected]="store.typeFilter() === 'all'"
+          [attr.aria-pressed]="store.typeFilter() === 'all'"
           [class.active]="store.typeFilter() === 'all'"
           (click)="store.typeFilter.set('all')"
         >
@@ -123,8 +129,7 @@
         @for (t of types; track t) {
           <button
             type="button"
-            role="tab"
-            [attr.aria-selected]="store.typeFilter() === t"
+            [attr.aria-pressed]="store.typeFilter() === t"
             [class.active]="store.typeFilter() === t"
             (click)="store.typeFilter.set(t)"
           >
@@ -136,16 +141,14 @@
 
     <header class="top">
       <div>
-        <h1>My Collection</h1>
+        <h1 #pageHeading tabindex="-1">My Collection</h1>
         <p class="muted">
           Showing {{ store.filtered().length }} of {{ store.committed().length }} cataloged items
         </p>
       </div>
 
       <div class="toolbar-actions desktop-actions">
-        @if (!formOpen()) {
-          <button type="button" class="btn-primary" (click)="openAdd()">+ Add item</button>
-        }
+        <button type="button" class="btn-primary" (click)="openAdd()">+ Add item</button>
         <button type="button" (click)="openCapture()">Quick capture</button>
         @if (store.pricingProgress(); as prog) {
           <button type="button" disabled>
@@ -321,7 +324,7 @@
           <li
             [attr.data-status]="item.status"
             [class.selected]="store.selectedId() === item.id"
-            (click)="store.selectedId.set(item.id)"
+            (click)="openInspector(item.id)"
           >
             <div class="main">
               @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
@@ -343,7 +346,16 @@
                     }
                   </div>
                 </div>
-                <strong class="item-title">{{ item.title }}</strong>
+                <strong class="item-title">
+                  <button
+                    type="button"
+                    class="item-open"
+                    [attr.aria-label]="'View details for ' + item.title"
+                    (click)="openInspector(item.id); $event.stopPropagation()"
+                  >
+                    {{ item.title }}
+                  </button>
+                </strong>
                 @if (item.condition) {
                   <span class="muted small">Condition: {{ item.condition }}</span>
                 }
@@ -395,9 +407,9 @@
   </main>
 
   @if (drawerOpen()) {
-    <aside class="drawer" aria-label="Item workspace panel">
+    <aside class="drawer" aria-labelledby="drawer-title">
       <div class="drawer-header">
-        <strong>
+        <h2 id="drawer-title" #drawerTitle tabindex="-1">
           @if (formOpen()) {
             {{ editingItem() ? 'Edit Catalog Item' : 'New Catalog Item' }}
           } @else if (captureOpen()) {
@@ -409,8 +421,8 @@
           } @else {
             Item Inspector
           }
-        </strong>
-        <button type="button" class="btn-subtle" (click)="closeDrawer()">Close</button>
+        </h2>
+        <button type="button" class="btn-subtle" (click)="requestCloseDrawer()">Close</button>
       </div>
 
       @if (formOpen()) {
@@ -561,18 +573,18 @@
   }
 
   @if (activePopup() === 'data') {
-    <div class="bottom-popup" role="menu" aria-label="Import, export and valuation tools">
+    <section class="bottom-popup" #popup aria-label="Import, export and valuation tools">
       <div class="popup-header">
         <strong>Collection Tools</strong>
         <span class="c-badge">CSV &amp; eBay</span>
       </div>
-      <button type="button" class="popup-item" role="menuitem" (click)="openImport()">
+      <button type="button" class="popup-item" (click)="openImport()">
         Import from CSV
       </button>
       <button
         type="button"
         class="popup-item"
-        role="menuitem"
+       
         [disabled]="!store.committed().length"
         (click)="exportCsv()"
       >
@@ -582,7 +594,7 @@
         <button
           type="button"
           class="popup-item btn-primary"
-          role="menuitem"
+         
           [disabled]="store.pricingProgress() !== null"
           (click)="refreshMissingCards()"
         >
@@ -590,11 +602,11 @@
           {{ store.unvaluedCards().length === 1 ? 'card' : 'cards' }} (eBay)
         </button>
       }
-    </div>
+    </section>
   }
 
   @if (activePopup() === 'profile') {
-    <div class="bottom-popup" role="menu" aria-label="User profile and settings">
+    <section class="bottom-popup" #popup aria-label="Account and settings">
       <div class="popup-header">
         <span class="popup-email" [title]="supabase.session()?.user?.email ?? ''">
           {{ supabase.session()?.user?.email ?? 'Signed in' }}
@@ -608,6 +620,7 @@
           <button
             type="button"
             [class.active]="theme() === 'system'"
+            [attr.aria-pressed]="theme() === 'system'"
             (click)="setTheme('system')"
           >
             Auto
@@ -615,6 +628,7 @@
           <button
             type="button"
             [class.active]="theme() === 'light'"
+            [attr.aria-pressed]="theme() === 'light'"
             (click)="setTheme('light')"
           >
             Light
@@ -622,6 +636,7 @@
           <button
             type="button"
             [class.active]="theme() === 'dark'"
+            [attr.aria-pressed]="theme() === 'dark'"
             (click)="setTheme('dark')"
           >
             Dark
@@ -629,24 +644,24 @@
         </div>
       </div>
 
-      <button type="button" class="popup-item" role="menuitem" (click)="openPricing()">
+      <button type="button" class="popup-item" (click)="openPricing()">
         Upgrade Membership / Pricing
       </button>
 
       @if (store.drafts().length > 0) {
-        <button type="button" class="popup-item" role="menuitem" (click)="startReview()">
+        <button type="button" class="popup-item" (click)="startReview()">
           Review {{ store.drafts().length }} AI photo
           {{ store.drafts().length === 1 ? 'draft' : 'drafts' }}
         </button>
       }
 
-      <button type="button" class="popup-item" role="menuitem" (click)="signOut()">
+      <button type="button" class="popup-item" (click)="signOut()">
         Sign out
       </button>
-      <button type="button" class="popup-item danger" role="menuitem" (click)="deleteAccount()">
+      <button type="button" class="popup-item danger" (click)="deleteAccount()">
         Delete account &amp; data
       </button>
-    </div>
+    </section>
   }
 
   <nav class="bottom-nav" aria-label="Mobile quick actions">

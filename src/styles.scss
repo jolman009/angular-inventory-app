@@ -848,3 +848,31 @@ button[type='submit'],
     font-size: 1.35rem;
   }
 }
+
+/* ---- Drawer title & item open buttons (keyboard access) ---- */
+.drawer-header h2 {
+  margin: 0;
+  font: inherit;
+}
+
+.drawer-header h2:focus,
+.top h1:focus {
+  outline: none; /* focused by script to announce the panel; not an interactive control */
+}
+
+.item-open {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.item-open:hover:not(:disabled) {
+  text-decoration: underline;
+  border: none;
+}

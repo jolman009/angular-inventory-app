@@ -320,7 +320,13 @@ export class ItemForm {
     this.saving.set(false);
   }
 
+  /** True when the user has typed or picked something that hasn't been saved yet. */
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty || this.pendingFile() !== null || this.removeImage();
+  }
+
   cancel() {
+    if (this.hasUnsavedChanges() && !confirm('Discard your unsaved changes?')) return;
     this.done.emit();
   }
 

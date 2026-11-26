@@ -1,5 +1,17 @@
 import { CurrencyPipe, DecimalPipe, NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  OnInit,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { BRAND } from '../../../core/brand';
 import { Supabase } from '../../../core/supabase';
@@ -33,11 +45,19 @@ const THEME_KEY = 'vaulted-theme';
   templateUrl: './item-list.html',
   styleUrl: './item-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
 })
 export class ItemList implements OnInit {
   protected supabase = inject(Supabase);
   protected store = inject(ItemStore);
   private router = inject(Router);
+  private injector = inject(Injector);
+
+  // Elements we move keyboard focus to
+  private readonly drawerTitle = viewChild<ElementRef<HTMLElement>>('drawerTitle');
+  private readonly pageHeading = viewChild<ElementRef<HTMLElement>>('pageHeading');
+  private readonly popup = viewChild<ElementRef<HTMLElement>>('popup');
+  private readonly itemForm = viewChild(ItemForm);
 
   protected readonly brand = BRAND;
   protected readonly types = MEDIA_TYPES;
@@ -81,6 +101,65 @@ export class ItemList implements OnInit {
       this.inspectingItem() !== null,
   );
 
+  /** True on tablet/phone widths, where the drawer covers the page instead of sitting beside it. */
+  protected readonly isCompact = signal(false);
+
+  /** Identifies what the drawer shows, so focus moves whenever it opens or switches content. */
+  private readonly drawerKey = computed(() => {
+    if (this.formOpen()) return `form:${this.editingId() ?? 'new'}`;
+    if (this.captureOpen()) return 'capture';
+    if (this.importOpen()) return 'import';
+    if (this.pricingOpen()) return 'plans';
+    const item = this.inspectingItem();
+    return item ? `item:${item.id}` : null;
+  });
+
+  private previousDrawerKey: string | null = null;
+  // The control that opened the drawer or a pop-up, so focus can go back to it on close
+  private drawerReturnFocus: HTMLElement | null = null;
+  private popupReturnFocus: HTMLElement | null = null;
+
+  constructor() {
+    try {
+      const query = window.matchMedia('(max-width: 980px)');
+      this.isCompact.set(query.matches);
+      query.addEventListener('change', e => this.isCompact.set(e.matches));
+    } catch {
+      // matchMedia is missing in some test environments; keep the desktop layout
+    }
+
+    // Move focus into the drawer when it opens or changes, and back out when it closes.
+    effect(() => {
+      const key = this.drawerKey();
+      const previous = this.previousDrawerKey;
+      this.previousDrawerKey = key;
+      if (key === previous) return;
+
+      afterNextRender(
+        () => {
+          if (key) {
+            this.drawerTitle()?.nativeElement.focus();
+            return;
+          }
+          const target = this.drawerReturnFocus;
+          this.drawerReturnFocus = null;
+          if (target?.isConnected) target.focus();
+          else this.pageHeading()?.nativeElement.focus();
+        },
+        { injector: this.injector },
+      );
+    });
+  }
+
+  /** Remembers the focused control before the drawer opens, so closing it can return there. */
+  private rememberDrawerTrigger() {
+    if (this.drawerKey() === null) {
+      // Opened from a pop-up: return to the bottom-nav button, since the pop-up will be gone
+      const active = this.activePopup() ? this.popupReturnFocus : document.activeElement;
+      this.drawerReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
+    }
+  }
+
   ngOnInit() {
     this.initTheme();
     this.store.load();
@@ -118,11 +197,48 @@ export class ItemList implements OnInit {
   }
 
   togglePopup(menu: 'data' | 'profile') {
-    this.activePopup.update(curr => (curr === menu ? null : menu));
+    if (this.activePopup() === menu) {
+      this.closePopup(true);
+      return;
+    }
+    this.popupReturnFocus ??= document.activeElement as HTMLElement | null;
+    this.activePopup.set(menu);
+    // Put focus on the first control in the pop-up so keyboard users land inside it
+    afterNextRender(
+      () => this.popup()?.nativeElement.querySelector<HTMLElement>('button:not([disabled])')?.focus(),
+      { injector: this.injector },
+    );
   }
 
-  closePopup() {
+  /** Closes the pop-up. Pass true to send focus back to the button that opened it. */
+  closePopup(restoreFocus = false) {
+    if (!this.activePopup()) return;
     this.activePopup.set(null);
+    const target = this.popupReturnFocus;
+    this.popupReturnFocus = null;
+    if (restoreFocus && target?.isConnected) target.focus();
+  }
+
+  /** Escape closes the top-most layer: a pop-up first, then the drawer. */
+  onEscape() {
+    if (this.activePopup()) {
+      this.closePopup(true);
+      return;
+    }
+    if (this.drawerOpen()) this.requestCloseDrawer();
+  }
+
+  /** Closes the drawer, first asking before throwing away unsaved form edits. */
+  requestCloseDrawer() {
+    if (this.formOpen() && this.itemForm()?.hasUnsavedChanges() && !confirm('Discard your unsaved changes?')) {
+      return;
+    }
+    this.closeDrawer();
+  }
+
+  openInspector(id: string) {
+    this.rememberDrawerTrigger();
+    this.store.selectedId.set(id);
   }
 
   goHome() {
@@ -132,6 +248,7 @@ export class ItemList implements OnInit {
   }
 
   openAdd() {
+    this.rememberDrawerTrigger();
     this.closePopup();
     this.importOpen.set(false);
     this.captureOpen.set(false);
@@ -142,6 +259,7 @@ export class ItemList implements OnInit {
   }
 
   openCapture() {
+    this.rememberDrawerTrigger();
     this.closePopup();
     this.adding.set(false);
     this.editingId.set(null);
@@ -151,6 +269,7 @@ export class ItemList implements OnInit {
   }
 
   openImport() {
+    this.rememberDrawerTrigger();
     this.closePopup();
     this.adding.set(false);
     this.editingId.set(null);
@@ -160,6 +279,7 @@ export class ItemList implements OnInit {
   }
 
   openPricing() {
+    this.rememberDrawerTrigger();
     this.closePopup();
     this.adding.set(false);
     this.editingId.set(null);
@@ -169,6 +289,7 @@ export class ItemList implements OnInit {
   }
 
   startEdit(id: string) {
+    this.rememberDrawerTrigger();
     this.closePopup();
     this.importOpen.set(false);
     this.captureOpen.set(false);
@@ -193,6 +314,7 @@ export class ItemList implements OnInit {
   }
 
   startReview() {
+    this.rememberDrawerTrigger();
     const first = this.store.drafts()[0];
     if (!first) return;
 
