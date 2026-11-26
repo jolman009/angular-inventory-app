@@ -204,4 +204,65 @@ describe('ItemStore', () => {
     expect(service.items().map(i => i.id)).toEqual(['keep-me']);
     expect(service.error()).toContain("couldn't delete your account");
   });
+
+  it('loads every item past the 1,000-row limit, one page at a time', async () => {
+    const client = TestBed.inject(Supabase).client;
+    const total = 2345;
+    const rows = Array.from({ length: total }, (_, i) => ({
+      id: `id-${i}`,
+      type: 'book',
+      title: `Book ${i}`,
+      status: 'owned',
+      condition: null,
+      purchase_price: null,
+      notes: null,
+      details: {},
+      image_path: null,
+      draft: false,
+      created_at: '2026-01-01T00:00:00Z',
+    }));
+    const ranges: [number, number][] = [];
+    // A stand-in for the Supabase query builder: records each .range() and
+    // returns that slice, capped at 1,000 rows like the real API.
+    const query = {
+      select: () => query,
+      order: () => query,
+      range: async (from: number, to: number) => {
+        ranges.push([from, to]);
+        return { data: rows.slice(from, Math.min(to + 1, from + 1000)), error: null };
+      },
+    };
+    vi.spyOn(client, 'from').mockReturnValue(query as never);
+
+    await service.load();
+
+    expect(service.items().length).toBe(total);
+    expect(ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+    ]);
+    expect(service.loading()).toBe(false);
+  });
+
+  it('keeps the old list and shows an error if a later page fails', async () => {
+    const client = TestBed.inject(Supabase).client;
+    let call = 0;
+    const query = {
+      select: () => query,
+      order: () => query,
+      range: async () =>
+        call++ === 0
+          ? { data: Array.from({ length: 1000 }, (_, i) => ({ id: String(i) })), error: null }
+          : { data: null, error: { message: 'Failed to fetch' } },
+    };
+    vi.spyOn(client, 'from').mockReturnValue(query as never);
+    service.items.set([]);
+
+    await service.load();
+
+    expect(service.items()).toEqual([]);
+    expect(service.error()).toContain("Can't reach the server");
+    expect(service.loading()).toBe(false);
+  });
 });
