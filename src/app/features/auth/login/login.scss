@@ -84,3 +84,23 @@ label {
 .message {
   color: var(--success);
 }
+
+.forgot {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+// a standalone link after a status message (reset-password page)
+.link-button {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  color: var(--primary);
+  font-weight: 600;
+}

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DOCUMENT, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,10 +9,9 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BRAND } from '../../../core/brand';
+import { MIN_PASSWORD } from '../../../core/password-rules';
 import { Supabase } from '../../../core/supabase';
 
-// Keep this in sync with the minimum length set in Supabase (Authentication settings)
-const MIN_PASSWORD = 10;
 
 /** Group-level check: the two password boxes must match (only while confirm is enabled). */
 const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
@@ -32,6 +31,7 @@ export class Login {
   private supabase = inject(Supabase);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private document = inject(DOCUMENT);
   protected readonly brand = BRAND;
 
   protected readonly minPassword = MIN_PASSWORD;
@@ -78,6 +78,34 @@ export class Login {
 
     password.updateValueAndValidity();
     this.form.markAsUntouched();
+  }
+
+  /** Emails a one-time link that opens /reset-password. */
+  async sendResetLink() {
+    const email = this.form.controls.email;
+    this.error.set(null);
+    this.message.set(null);
+    if (email.invalid) {
+      email.markAsTouched();
+      this.document.getElementById('email')?.focus();
+      return;
+    }
+
+    this.loading.set(true);
+    const { error } = await this.supabase.client.auth.resetPasswordForEmail(email.value, {
+      redirectTo: `${this.document.location.origin}/reset-password`,
+    });
+    this.loading.set(false);
+
+    if (error) {
+      this.error.set(error.message);
+    } else {
+      // Same wording whether or not the account exists, so the form can't be used
+      // to find out who has an account.
+      this.message.set(
+        `If ${email.value} has an account, a reset link is on its way. Check your inbox and spam folder.`,
+      );
+    }
   }
 
   async submit() {

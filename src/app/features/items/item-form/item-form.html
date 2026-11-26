@@ -10,7 +10,7 @@
       Type
       <select formControlName="type">
         @for (t of types; track t) {
-          <option [value]="t">{{ t }}</option>
+          <option [value]="t">{{ typeNames[t] }}</option>
         }
       </select>
     </label>
@@ -19,7 +19,7 @@
       Status
       <select formControlName="status">
         @for (s of statuses; track s) {
-          <option [value]="s">{{ s }}</option>
+          <option [value]="s">{{ statusNames[s] }}</option>
         }
       </select>
     </label>
@@ -27,16 +27,21 @@
 
   <label>
     {{ titleLabel().label }}
-    <input formControlName="title" [placeholder]="titleLabel().placeholder" />
+    <input
+      formControlName="title"
+      [placeholder]="titleLabel().placeholder"
+      [attr.aria-invalid]="titleInvalid()"
+      [attr.aria-describedby]="titleInvalid() ? 'title-error' : null"
+    />
   </label>
-  @if (form.controls.title.touched && form.controls.title.hasError('required')) {
-    <small class="field-error">{{ titleLabel().label }} is required.</small>
+  @if (titleInvalid()) {
+    <small id="title-error" class="field-error">{{ titleLabel().label }} is required.</small>
   }
 
   <fieldset formGroupName="details" class="details">
-    <legend>{{ currentType() }} details</legend>
+    <legend>{{ typeNames[currentType()] }} details</legend>
     <div class="grid">
-      @for (f of detailFields(); track currentType() + ':' + f.key) {
+      @for (f of detailFields(); track f.key) {
         <label>
           {{ f.label }}
           @if (f.kind === 'select') {
@@ -51,13 +56,12 @@
               [formControlName]="f.key"
               [placeholder]="f.placeholder ?? ''"
               [attr.inputmode]="f.kind === 'number' ? 'numeric' : null"
+              [attr.aria-invalid]="detailInvalid(f.key)"
+              [attr.aria-describedby]="detailInvalid(f.key) ? 'detail-error-' + f.key : null"
             />
           }
-          @if (
-            detailsGroup.controls[f.key]?.touched &&
-            detailsGroup.controls[f.key]?.hasError('pattern')
-          ) {
-            <small class="field-error">Numbers only.</small>
+          @if (detailInvalid(f.key)) {
+            <small [id]="'detail-error-' + f.key" class="field-error">Numbers only.</small>
           }
         </label>
       }
@@ -119,11 +123,17 @@
 
     <label>
       Price paid
-      <input type="number" step="0.01" formControlName="purchase_price" />
+      <input
+        type="number"
+        step="0.01"
+        formControlName="purchase_price"
+        [attr.aria-invalid]="priceInvalid()"
+        [attr.aria-describedby]="priceInvalid() ? 'price-error' : null"
+      />
     </label>
   </div>
-  @if (form.controls.purchase_price.hasError('min')) {
-    <small class="field-error">Price can't be negative.</small>
+  @if (priceInvalid()) {
+    <small id="price-error" class="field-error">Price can't be negative.</small>
   }
 
   <label>
@@ -149,7 +159,7 @@
     </div>
 
     @if (imageError()) {
-      <small class="field-error">{{ imageError() }}</small>
+      <small class="field-error" role="alert">{{ imageError() }}</small>
     }
   </div>
 

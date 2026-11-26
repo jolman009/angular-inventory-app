@@ -54,6 +54,11 @@
       @if (mode() === 'signup' && form.controls.password.touched && form.controls.password.hasError('minlength')) {
         <small id="password-error" class="field-error">Password must be at least {{ minPassword }} characters.</small>
       }
+      @if (mode() === 'signin') {
+        <button type="button" class="forgot" [disabled]="loading()" (click)="sendResetLink()">
+          Forgot password?
+        </button>
+      }
     </div>
 
     @if (mode() === 'signup') {

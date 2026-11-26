@@ -86,4 +86,50 @@ describe('ItemList', () => {
     expect(store.search()).toBe('');
     expect(el.querySelector('.items li.empty')).toBeNull();
   });
+
+  it('closes the top-most layer with Escape: pop-up first, then drawer', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    component.openImport();
+    component.togglePopup('profile');
+    fixture.detectChanges();
+    expect(el.querySelector('.bottom-popup')).toBeTruthy();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el.querySelector('.bottom-popup')).toBeNull();
+    expect(el.querySelector('.drawer')).toBeTruthy();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(el.querySelector('.drawer')).toBeNull();
+  });
+
+  it('gives every item a keyboard-reachable button that opens the inspector', () => {
+    const store = TestBed.inject(ItemStore);
+    store.loading.set(false);
+    store.items.set([
+      {
+        id: '1',
+        type: 'book',
+        title: 'Dune',
+        status: 'owned',
+        condition: null,
+        purchase_price: null,
+        notes: null,
+        details: {},
+        image_path: null,
+        draft: false,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const open = el.querySelector<HTMLButtonElement>('.item-open');
+    expect(open).toBeTruthy();
+    open!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.inspector h2')?.textContent).toContain('Dune');
+    // no misused ARIA roles
+    expect(el.querySelector('[role=menu], [role=menuitem], [role=tab], [role=tablist]')).toBeNull();
+  });
 });

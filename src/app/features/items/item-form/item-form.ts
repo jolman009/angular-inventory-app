@@ -28,8 +28,10 @@ import {
   Item,
   ItemStatus,
   MEDIA_TYPES,
+  MEDIA_TYPE_SINGULAR,
   MediaType,
   NewItem,
+  STATUS_LABELS,
   TITLE_LABELS,
   getCardValuation,
 } from '../item.model';
@@ -53,6 +55,8 @@ export class ItemForm {
   protected readonly isDraft = computed(() => this.item()?.draft ?? false);
   protected readonly types = MEDIA_TYPES;
   protected readonly statuses = ITEM_STATUSES;
+  protected readonly typeNames = MEDIA_TYPE_SINGULAR;
+  protected readonly statusNames = STATUS_LABELS;
 
   // type-specific fields
   protected readonly currentType = signal<MediaType>('book');
@@ -96,6 +100,22 @@ export class ItemForm {
     details: this.detailsGroup,
   });
 
+  // Error checks shared by the message and the input's aria-invalid/aria-describedby,
+  // so a screen reader announces the same error the user sees.
+  protected titleInvalid(): boolean {
+    const c = this.form.controls.title;
+    return c.touched && c.hasError('required');
+  }
+
+  protected detailInvalid(key: string): boolean {
+    const c = this.detailsGroup.controls[key];
+    return !!c && c.touched && c.hasError('pattern');
+  }
+
+  protected priceInvalid(): boolean {
+    return this.form.controls.purchase_price.hasError('min');
+  }
+
   constructor() {
     this.buildDetails('book');
 
@@ -138,20 +158,29 @@ export class ItemForm {
   private buildDetails(type: MediaType, values: Record<string, unknown> = {}) {
     const fields = DETAIL_FIELDS[type];
 
+    const keep = new Set(fields.map(f => f.key));
     for (const key of Object.keys(this.detailsGroup.controls)) {
-      this.detailsGroup.removeControl(key);
+      if (!keep.has(key)) this.detailsGroup.removeControl(key);
     }
 
+    // Fields shared between types (like "year") keep their existing control and are
+    // just reset. Swapping in a brand-new control for the same name left the visible
+    // input wired to a control the form no longer held, so its value was never saved.
     for (const f of fields) {
       const raw = values[f.key];
+      const value = raw == null ? '' : String(raw);
       const validators = f.kind === 'number' ? [Validators.pattern(/^\d+$/)] : [];
-      this.detailsGroup.addControl(
-        f.key,
-        new FormControl<string>(raw == null ? '' : String(raw), {
-          nonNullable: true,
-          validators,
-        }),
-      );
+      const existing = this.detailsGroup.controls[f.key];
+      if (existing) {
+        existing.setValidators(validators);
+        existing.reset(value, { emitEvent: false });
+        existing.updateValueAndValidity({ emitEvent: false });
+      } else {
+        this.detailsGroup.addControl(
+          f.key,
+          new FormControl<string>(value, { nonNullable: true, validators }),
+        );
+      }
     }
 
     this.currentType.set(type);
@@ -320,7 +349,13 @@ export class ItemForm {
     this.saving.set(false);
   }
 
+  /** True when the user has typed or picked something that hasn't been saved yet. */
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty || this.pendingFile() !== null || this.removeImage();
+  }
+
   cancel() {
+    if (this.hasUnsavedChanges() && !confirm('Discard your unsaved changes?')) return;
     this.done.emit();
   }
 

@@ -8,6 +8,7 @@ import {
   CardValuation,
   Item,
   ItemStatus,
+  MEDIA_TYPE_SINGULAR,
   MediaType,
   NewItem,
   ScanSuggestion,
@@ -16,6 +17,9 @@ import {
 } from './item.model';
 
 const BUCKET = 'item-images';
+/** Supabase's default maximum rows per request. */
+const PAGE_SIZE = 1000;
+const SIGN_BATCH = 500;
 
 /** Turns common raw Supabase/network errors into sentences a collector can act on. */
 export function friendlyError(message: string): string {
@@ -196,17 +200,29 @@ export class ItemStore {
     this.loading.set(true);
     this.error.set(null);
 
-    const { data, error } = await this.db
-      .from('items')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Supabase returns at most 1,000 rows per request, so read the collection in pages
+    // until a page comes back short. Sorting by id as well keeps the page edges stable
+    // when two items share the same created_at.
+    const all: Item[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await this.db
+        .from('items')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
 
-    if (error) this.error.set(friendlyError(error.message));
-    else {
-      this.items.set(data as Item[]);
-      await this.signImages();
+      if (error) {
+        this.error.set(friendlyError(error.message));
+        this.loading.set(false);
+        return;
+      }
+      all.push(...(data as Item[]));
+      if (data.length < PAGE_SIZE) break;
     }
 
+    this.items.set(all);
+    await this.signImages();
     this.loading.set(false);
   }
 
@@ -229,7 +245,7 @@ export class ItemStore {
 
     await this.add({
       type,
-      title: suggestion?.title || `Untitled ${type}`,
+      title: suggestion?.title || `Untitled ${MEDIA_TYPE_SINGULAR[type].toLowerCase()}`,
       status: 'owned',
       condition: null,
       purchase_price: null,
@@ -507,12 +523,16 @@ export class ItemStore {
       .filter((p): p is string => !!p && !known[p]);
     if (!paths.length) return;
 
-    const { data, error } = await this.db.storage.from(BUCKET).createSignedUrls(paths, 3600);
-    if (error || !data) return;
-
+    // Sign in batches so a large collection doesn't send one huge request.
     const next = { ...known };
-    for (const row of data) {
-      if (row.path && row.signedUrl) next[row.path] = row.signedUrl;
+    for (let i = 0; i < paths.length; i += SIGN_BATCH) {
+      const { data, error } = await this.db.storage
+        .from(BUCKET)
+        .createSignedUrls(paths.slice(i, i + SIGN_BATCH), 3600);
+      if (error || !data) continue;
+      for (const row of data) {
+        if (row.path && row.signedUrl) next[row.path] = row.signedUrl;
+      }
     }
     this.imageUrls.set(next);
   }
