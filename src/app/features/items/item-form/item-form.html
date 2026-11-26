@@ -41,7 +41,7 @@
   <fieldset formGroupName="details" class="details">
     <legend>{{ typeNames[currentType()] }} details</legend>
     <div class="grid">
-      @for (f of detailFields(); track currentType() + ':' + f.key) {
+      @for (f of detailFields(); track f.key) {
         <label>
           {{ f.label }}
           @if (f.kind === 'select') {

@@ -158,20 +158,29 @@ export class ItemForm {
   private buildDetails(type: MediaType, values: Record<string, unknown> = {}) {
     const fields = DETAIL_FIELDS[type];
 
+    const keep = new Set(fields.map(f => f.key));
     for (const key of Object.keys(this.detailsGroup.controls)) {
-      this.detailsGroup.removeControl(key);
+      if (!keep.has(key)) this.detailsGroup.removeControl(key);
     }
 
+    // Fields shared between types (like "year") keep their existing control and are
+    // just reset. Swapping in a brand-new control for the same name left the visible
+    // input wired to a control the form no longer held, so its value was never saved.
     for (const f of fields) {
       const raw = values[f.key];
+      const value = raw == null ? '' : String(raw);
       const validators = f.kind === 'number' ? [Validators.pattern(/^\d+$/)] : [];
-      this.detailsGroup.addControl(
-        f.key,
-        new FormControl<string>(raw == null ? '' : String(raw), {
-          nonNullable: true,
-          validators,
-        }),
-      );
+      const existing = this.detailsGroup.controls[f.key];
+      if (existing) {
+        existing.setValidators(validators);
+        existing.reset(value, { emitEvent: false });
+        existing.updateValueAndValidity({ emitEvent: false });
+      } else {
+        this.detailsGroup.addControl(
+          f.key,
+          new FormControl<string>(value, { nonNullable: true, validators }),
+        );
+      }
     }
 
     this.currentType.set(type);

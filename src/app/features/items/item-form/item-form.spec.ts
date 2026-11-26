@@ -104,4 +104,26 @@ describe('ItemForm', () => {
     expect(price.getAttribute('aria-describedby')).toBe('price-error');
     expect(el.querySelector('#price-error')?.textContent).toContain("can't be negative");
   });
+
+  it('still saves detail fields after the type is switched', async () => {
+    const store = TestBed.inject(ItemStore);
+    const add = vi.spyOn(store, 'add').mockImplementation(async () => store.error.set(null));
+    const el = fixture.nativeElement as HTMLElement;
+
+    const typeSelect = el.querySelector<HTMLSelectElement>('select[formcontrolname=type]')!;
+    typeSelect.value = typeSelect.options[3].value; // Record
+    typeSelect.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const inputs = el.querySelectorAll<HTMLInputElement>('fieldset.details input');
+    const year = inputs[2]; // Artist, Label, Year, Format
+    year.value = '1969';
+    year.dispatchEvent(new Event('input'));
+    component['form'].controls.title.setValue('Abbey Road');
+    await component.submit();
+
+    expect(add).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'vinyl', details: expect.objectContaining({ year: 1969 }) }),
+    );
+  });
 });
