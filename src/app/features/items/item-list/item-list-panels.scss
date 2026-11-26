@@ -1,0 +1,128 @@
+/* Collection screen: toolbar, sidebar, drawer, inspector, pop-ups, membership. */
+
+/* Search, filters, sort and view toggle above the item list */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.filters {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: min(100%, 280px);
+}
+
+.filters input {
+  flex: 3 1 220px;
+}
+
+.filters select {
+  flex: 1 1 140px;
+  width: auto;
+}
+
+.view-toggle {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.view-toggle button {
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.view-toggle button.active {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+  font-weight: 600;
+}
+
+/* Collection sidebar */
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  height: 100vh;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-3);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.facet-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.facet-heading {
+  margin-bottom: var(--space-1);
+  padding: 0 var(--space-3);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.facet-btn {
+  justify-content: space-between;
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.facet-btn:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  border-color: transparent;
+  color: var(--text);
+}
+
+.facet-btn.active {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.facet-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.facet-count {
+  min-width: 1.75rem;
+  padding: 0 var(--space-2);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.facet-btn.active .facet-count {
+  background: var(--surface);
+  color: var(--primary-text);
+}

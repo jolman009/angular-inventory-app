@@ -11,17 +11,19 @@
 }
 
 .login {
-  width: min(400px, calc(100% - 2rem));
-  margin: 10vh auto 2rem;
-  padding: 2rem 1.5rem;
+  width: min(420px, calc(100% - 2rem));
+  margin: 10vh auto var(--space-8);
+  padding: var(--space-8) var(--space-6);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 h1 {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--space-6);
+  font-family: var(--font-slab);
+  font-size: var(--text-3xl);
 }
 
 form {
@@ -38,7 +40,7 @@ form {
 
 label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }
 
 .password-field {
@@ -55,12 +57,12 @@ label {
   right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  min-height: 36px;
+  min-height: var(--tap);
   padding: 0 0.6rem;
   background: none;
   border: none;
-  color: var(--primary);
-  font-size: 0.9rem;
+  color: var(--primary-text);
+  font-size: var(--text-sm);
 }
 
 .hint {
@@ -72,13 +74,13 @@ label {
   margin-top: 1rem;
   background: none;
   border: none;
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .field-error,
 .error {
   color: var(--danger);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .message {
@@ -87,12 +89,12 @@ label {
 
 .forgot {
   align-self: flex-start;
-  min-height: 36px;
+  min-height: var(--tap);
   padding: 0;
   background: none;
   border: none;
-  color: var(--primary);
-  font-size: 0.9rem;
+  color: var(--primary-text);
+  font-size: var(--text-sm);
   text-decoration: underline;
 }
 
@@ -101,6 +103,6 @@ label {
   display: block;
   margin-top: 1rem;
   text-align: center;
-  color: var(--primary);
+  color: var(--primary-text);
   font-weight: 600;
 }

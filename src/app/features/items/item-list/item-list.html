@@ -16,7 +16,7 @@
         [attr.aria-pressed]="store.typeFilter() === 'all'"
         (click)="store.typeFilter.set('all')"
       >
-        <span>All items</span>
+        <span class="facet-label"><app-icon name="stack" />All items</span>
         <span class="facet-count">{{ store.committed().length }}</span>
       </button>
       @for (t of types; track t) {
@@ -27,7 +27,7 @@
           [attr.aria-pressed]="store.typeFilter() === t"
           (click)="store.typeFilter.set(t)"
         >
-          <span>{{ typeLabels[t] }}</span>
+          <span class="facet-label"><app-icon [name]="t" />{{ typeLabels[t] }}</span>
           <span class="facet-count">{{ store.countsByType()[t] ?? 0 }}</span>
         </button>
       }
@@ -42,7 +42,7 @@
         [attr.aria-pressed]="store.statusFilter() === 'all'"
         (click)="store.statusFilter.set('all')"
       >
-        <span>All statuses</span>
+        <span class="facet-label"><app-icon name="pie" />All statuses</span>
         <span class="facet-count">{{ store.committed().length }}</span>
       </button>
       @for (s of statuses; track s) {
@@ -55,7 +55,7 @@
           (click)="store.statusFilter.set(s)"
         >
           <span class="facet-label">
-            <span class="c-dot" [style.--dot-color]="'var(--st-' + s + ')'"></span>
+            <span class="facet-dot"><span class="c-dot" [style.--dot-color]="'var(--st-' + s + ')'"></span></span>
             {{ statusLabels[s] }}
           </span>
           <span class="facet-count">{{ store.countsByStatus()[s] ?? 0 }}</span>
@@ -92,6 +92,7 @@
           </button>
         </div>
         <button type="button" class="btn-subtle" (click)="openPricing()">
+          <app-icon name="sparkle" [size]="18" />
           Upgrade Membership
         </button>
       </div>
@@ -99,8 +100,12 @@
         {{ supabase.session()?.user?.email }}
       </p>
       <div class="account-actions">
-        <button type="button" class="signout-btn" (click)="signOut()">Sign out</button>
-        <button type="button" class="signout-btn danger" (click)="deleteAccount()">
+        <button type="button" class="signout-btn btn-ghost" (click)="signOut()">
+          <app-icon name="logout" [size]="18" />
+          Sign out
+        </button>
+        <button type="button" class="signout-btn btn-ghost danger" (click)="deleteAccount()">
+          <app-icon name="trash" [size]="18" />
           Delete account &amp; data
         </button>
       </div>
@@ -148,29 +153,45 @@
       </div>
 
       <div class="toolbar-actions desktop-actions">
-        <button type="button" class="btn-primary" (click)="openAdd()">+ Add item</button>
-        <button type="button" (click)="openCapture()">Quick capture</button>
-        @if (store.pricingProgress(); as prog) {
-          <button type="button" disabled>
-            Pricing {{ prog.current }}/{{ prog.total }} cards…
+        <div class="tool-group" role="group" aria-label="Collection tools">
+          @if (store.pricingProgress(); as prog) {
+            <button type="button" class="btn-ghost" disabled>
+              <app-icon name="tag" [size]="18" />
+              <span class="tool-label">Pricing {{ prog.current }}/{{ prog.total }} cards…</span>
+            </button>
+          } @else if (store.unvaluedCards().length > 0) {
+            <button type="button" class="btn-ghost" title="Get eBay estimates for unpriced cards" (click)="refreshMissingCards()">
+              <app-icon name="tag" [size]="18" />
+              <span class="tool-label">
+                Price {{ store.unvaluedCards().length }}
+                {{ store.unvaluedCards().length === 1 ? 'card' : 'cards' }} (eBay)
+              </span>
+            </button>
+          }
+          <button type="button" class="btn-ghost" title="Import from CSV" (click)="openImport()">
+            <app-icon name="upload" [size]="18" />
+            <span class="tool-label">Import</span>
           </button>
-        } @else if (store.unvaluedCards().length > 0) {
-          <button type="button" (click)="refreshMissingCards()">
-            Price {{ store.unvaluedCards().length }}
-            {{ store.unvaluedCards().length === 1 ? 'card' : 'cards' }} (eBay)
+          <button type="button" class="btn-ghost" title="Export collection CSV" (click)="exportCsv()" [disabled]="!store.committed().length">
+            <app-icon name="download" [size]="18" />
+            <span class="tool-label">Export</span>
           </button>
-        }
-        <button type="button" (click)="openImport()">Import</button>
-        <button type="button" (click)="exportCsv()" [disabled]="!store.committed().length">
-          Export
+        </div>
+        <button type="button" (click)="openCapture()">
+          <app-icon name="camera" [size]="18" />
+          Quick capture
+        </button>
+        <button type="button" class="btn-primary" (click)="openAdd()">
+          <app-icon name="plus" [size]="18" />
+          Add item
         </button>
       </div>
     </header>
 
     <section class="stats c-widget-grid" aria-label="Collection summary">
-      <article class="c-stat-card" style="--stat-accent: var(--primary)">
+      <article class="c-stat-card" style="--stat-accent: var(--mt-card)">
         <div class="c-stat-label">
-          <span>Total Items</span>
+          <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="stack" /></span>Total items</span>
           <span class="c-badge">{{ types.length }} types</span>
         </div>
         <div class="c-stat-value">{{ store.committed().length }} items</div>
@@ -192,7 +213,7 @@
 
       <article class="c-stat-card" style="--stat-accent: var(--st-owned)">
         <div class="c-stat-label">
-          <span>Est. Portfolio Value</span>
+          <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="coins" /></span>Est. portfolio value</span>
           <span class="c-badge">{{ store.valuedCardsCount() }} eBay valued</span>
         </div>
         <div class="c-stat-value">{{ store.totalEstimatedValue() | currency }}</div>
@@ -204,7 +225,7 @@
 
       <article class="c-stat-card" style="--stat-accent: var(--st-wishlist)">
         <div class="c-stat-label">
-          <span>By Status</span>
+          <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="pie" /></span>By status</span>
           <span class="c-badge">{{ store.countsByStatus()['owned'] ?? 0 }} owned</span>
         </div>
         <div class="c-progress" aria-hidden="true">
@@ -227,7 +248,7 @@
 
       <article class="c-stat-card" style="--stat-accent: var(--st-lent)">
         <div class="c-stat-label">
-          <span>AI Photo Queue</span>
+          <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="sparkle" /></span>AI photo queue</span>
           <span class="c-badge">Gemini + eBay</span>
         </div>
         <div class="c-stat-value">
@@ -303,6 +324,7 @@
           [attr.aria-pressed]="store.viewMode() === 'grid'"
           (click)="store.viewMode.set('grid')"
         >
+          <app-icon name="grid" [size]="18" />
           Grid
         </button>
         <button
@@ -311,13 +333,19 @@
           [attr.aria-pressed]="store.viewMode() === 'list'"
           (click)="store.viewMode.set('list')"
         >
+          <app-icon name="list" [size]="18" />
           List
         </button>
       </div>
     </div>
 
     @if (store.loading()) {
-      <p class="muted">Loading…</p>
+      <ul class="items" [class.grid-view]="store.viewMode() === 'grid'" aria-busy="true" aria-label="Loading your collection">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <li class="skeleton" aria-hidden="true"><div class="media"></div><div class="item-info"><span></span><span></span></div></li>
+        }
+      </ul>
+      <p class="visually-hidden" role="status">Loading…</p>
     } @else {
       <ul class="items" [class.grid-view]="store.viewMode() === 'grid'">
         @for (item of store.filtered(); track item.id) {
@@ -327,14 +355,25 @@
             (click)="openInspector(item.id)"
           >
             <div class="main">
-              @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
-                <img [src]="url" [alt]="item.title" class="thumb" />
-              } @else {
-                <div class="thumb-placeholder" aria-hidden="true">{{ typeNames[item.type] }}</div>
-              }
+              <div class="media" [style.--mt]="'var(--mt-' + item.type + ')'">
+                @if (item.image_path && store.imageUrls()[item.image_path]; as url) {
+                  <img [src]="url" [alt]="item.title" class="thumb" loading="lazy" />
+                } @else {
+                  <div class="thumb-placeholder" aria-hidden="true">
+                    <app-icon [name]="item.type" [size]="32" />
+                  </div>
+                }
+                <span class="status-pill" aria-hidden="true">
+                  <span class="c-dot" [style.--dot-color]="'var(--st-' + item.status + ')'"></span>
+                  {{ statusLabels[item.status] }}
+                </span>
+              </div>
               <div class="item-info">
                 <div class="item-badges">
-                  <span class="c-badge">{{ typeNames[item.type] }}</span>
+                  <span class="item-type" [style.--mt]="'var(--mt-' + item.type + ')'">
+                    <app-icon [name]="item.type" [size]="16" />
+                    {{ typeNames[item.type] }}
+                  </span>
                   <div class="price-group">
                     @if (cardValuation(item); as val) {
                       <span class="est-badge" title="eBay Median Estimate">
@@ -375,27 +414,38 @@
                   <option [value]="s" [selected]="s === item.status">{{ statusLabels[s] }}</option>
                 }
               </select>
-              <button type="button" (click)="startEdit(item.id); $event.stopPropagation()">
+              <button type="button" class="btn-ghost" (click)="startEdit(item.id); $event.stopPropagation()">
+                <app-icon name="edit" [size]="18" />
                 Edit
               </button>
               <button
                 type="button"
-                class="danger"
+                class="btn-ghost danger icon-btn"
+                [attr.aria-label]="'Delete ' + item.title"
+                title="Delete"
                 (click)="onDelete(item); $event.stopPropagation()"
               >
-                Delete
+                <app-icon name="trash" [size]="18" />
               </button>
             </div>
           </li>
         } @empty {
           @if (store.committed().length === 0) {
             <li class="empty">
-              Your collection is empty. Add an item, photograph several with Quick capture, or import
-              a spreadsheet to get started.
+              <span class="empty-icon"><app-icon name="stack" [size]="28" /></span>
+              <p>
+                Your collection is empty. Add an item, photograph several with Quick capture, or import
+                a spreadsheet to get started.
+              </p>
+              <button type="button" class="btn-primary" (click)="openAdd()">
+                <app-icon name="plus" [size]="18" />
+                Add item
+              </button>
             </li>
           } @else {
             <li class="empty">
-              No items match your search or filters.
+              <span class="empty-icon"><app-icon name="search" [size]="28" /></span>
+              <p>No items match your search or filters.</p>
               <button type="button" class="btn-subtle" (click)="store.resetFilters()">
                 Reset filters
               </button>
@@ -422,7 +472,10 @@
             Item Inspector
           }
         </h2>
-        <button type="button" class="btn-subtle" (click)="requestCloseDrawer()">Close</button>
+        <button type="button" class="btn-ghost" (click)="requestCloseDrawer()">
+          <app-icon name="close" [size]="18" />
+          Close
+        </button>
       </div>
 
       @if (formOpen()) {
@@ -524,7 +577,8 @@
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    View active eBay comps ↗
+                    View active eBay comps
+                    <app-icon name="external" [size]="16" />
                   </a>
                 </div>
               } @else {
@@ -559,9 +613,13 @@
 
           <div class="inspector-actions">
             <button type="button" class="btn-primary" (click)="startEdit(selected.id)">
+              <app-icon name="edit" [size]="18" />
               Edit item
             </button>
-            <button type="button" class="danger" (click)="onDelete(selected)">Delete</button>
+            <button type="button" class="danger" (click)="onDelete(selected)">
+              <app-icon name="trash" [size]="18" />
+              Delete
+            </button>
           </div>
         </div>
       }
@@ -579,22 +637,22 @@
         <span class="c-badge">CSV &amp; eBay</span>
       </div>
       <button type="button" class="popup-item" (click)="openImport()">
+        <app-icon name="upload" [size]="18" />
         Import from CSV
       </button>
       <button
         type="button"
         class="popup-item"
-       
         [disabled]="!store.committed().length"
         (click)="exportCsv()"
       >
+        <app-icon name="download" [size]="18" />
         Export Collection CSV
       </button>
       @if (store.unvaluedCards().length > 0) {
         <button
           type="button"
           class="popup-item btn-primary"
-         
           [disabled]="store.pricingProgress() !== null"
           (click)="refreshMissingCards()"
         >
@@ -656,9 +714,11 @@
       }
 
       <button type="button" class="popup-item" (click)="signOut()">
+        <app-icon name="logout" [size]="18" />
         Sign out
       </button>
       <button type="button" class="popup-item danger" (click)="deleteAccount()">
+        <app-icon name="trash" [size]="18" />
         Delete account &amp; data
       </button>
     </section>

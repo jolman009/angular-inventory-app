@@ -63,7 +63,10 @@
 
     <section class="dashboard-preview" aria-labelledby="preview-title">
       <div class="section-head">
-        <h2 id="preview-title">Your collection at a glance</h2>
+        <h2 id="preview-title">
+          Your collection at a glance
+          <span class="c-badge">Example</span>
+        </h2>
         <p class="muted">
           Inspired by modern enterprise dashboards, {{ brand.name }} surfaces live KPIs, category
           breakdowns, and AI photo drafts the moment you sign in.
@@ -71,9 +74,9 @@
       </div>
 
       <div class="c-widget-grid">
-        <article class="c-stat-card" style="--stat-accent: var(--primary)">
+        <article class="c-stat-card" style="--stat-accent: var(--mt-card)">
           <div class="c-stat-label">
-            <span>Total Cataloged</span>
+            <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="stack" /></span>Total Cataloged</span>
             <span class="c-badge">4 types</span>
           </div>
           <div class="c-stat-value">142 items</div>
@@ -88,7 +91,7 @@
 
         <article class="c-stat-card" style="--stat-accent: var(--st-owned)">
           <div class="c-stat-label">
-            <span>Portfolio Value</span>
+            <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="coins" /></span>Portfolio Value</span>
             <span class="c-badge">Tracked</span>
           </div>
           <div class="c-stat-value">$4,280.00</div>
@@ -97,7 +100,7 @@
 
         <article class="c-stat-card" style="--stat-accent: var(--st-wishlist)">
           <div class="c-stat-label">
-            <span>Status Breakdown</span>
+            <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="pie" /></span>Status Breakdown</span>
             <span class="c-badge">5 states</span>
           </div>
           <div class="c-stat-value">90% Owned</div>
@@ -112,7 +115,7 @@
 
         <article class="c-stat-card" style="--stat-accent: var(--st-lent)">
           <div class="c-stat-label">
-            <span>AI Quick Capture</span>
+            <span class="c-stat-title"><span class="c-stat-icon"><app-icon name="sparkle" /></span>AI Quick Capture</span>
             <span class="c-badge">Gemini Vision</span>
           </div>
           <div class="c-stat-value">Instant Scan</div>
