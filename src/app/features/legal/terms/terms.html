@@ -124,9 +124,36 @@
           until the end of the period you've paid for. If you go back to the free plan, nothing you
           saved is deleted, but you can't add items beyond the free limit.
         </p>
-        <!-- PLACEHOLDER: replace this paragraph with your own refund policy before taking real payments. -->
-        <p class="placeholder-note">
-          <strong>[Placeholder: refund policy to be written by the site owner.]</strong>
+
+        <h3 id="refund-policy">Refund Policy</h3>
+        <ul>
+          <li>
+            <strong>14-Day Refund on First Purchase:</strong> If you are not satisfied with your
+            first paid subscription, you may request a full refund within 14 days of the initial
+            charge.
+          </li>
+          <li>
+            <strong>Renewals &amp; Partial Periods:</strong> After the first 14 days, renewal charges
+            and partially used billing periods (monthly or yearly) are non-refundable, except where required by law.
+          </li>
+          <li>
+            <strong>Billing Errors:</strong> If you are charged in error, such as a duplicate charge
+            or a charge after a confirmed cancellation, contact us within 60 days and we will refund
+            the incorrect amount in full.
+          </li>
+          <li>
+            <strong>Price Changes:</strong> We will notify you by email at least 30 days before any
+            price change takes effect, giving you the opportunity to cancel before your next renewal.
+          </li>
+        </ul>
+        <p>
+          To request a refund, email
+          <a [href]="'mailto:' + brand.supportEmail + '?subject=Refund%20Request'">
+            {{ brand.supportEmail }}
+          </a>
+          from your registered email address. Approved refunds are returned to your original payment
+          method within 5–10 business days. Nothing in this section limits any refund or withdrawal
+          rights you have under the consumer protection laws of your country.
         </p>
       </section>
 
@@ -196,6 +223,8 @@
       <a routerLink="/privacy">Privacy Policy</a>
       <span aria-hidden="true">·</span>
       <a routerLink="/terms" aria-current="page">Terms &amp; Conditions</a>
+      <span aria-hidden="true">·</span>
+      <a routerLink="/terms" fragment="refund-policy">Refund Policy</a>
     </nav>
   </footer>
 </div>
